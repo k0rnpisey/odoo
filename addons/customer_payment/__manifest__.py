@@ -14,6 +14,7 @@
         * View all invoices for a customer by year
         * Record multiple payment entries with dates and amounts
         * Compare total invoices vs total payments
+        * Running balance fields on invoice reports showing cumulative totals and payments
     """,
     'author': 'Your Company',
     'website': 'https://www.yourcompany.com',
@@ -23,6 +24,7 @@
         'data/sequence_data.xml',
         'views/customer_payment_views.xml',
         'views/menu_views.xml',
+        'views/report_invoice.xml',
     ],
     'installable': True,
     'application': True,
