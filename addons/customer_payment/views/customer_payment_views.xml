@@ -123,8 +123,7 @@
                 <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="Processed" name="processed" domain="[('state', '=', 'processed')]"/>
                 <separator/>
-                <filter string="Current Year" name="current_year"
-                        domain="[('year', '=', context_today().year)]"/>
+                <filter string="This Year" name="this_year" domain="[('year', '=', 2026)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Customer" name="group_partner" context="{'group_by': 'partner_id'}"/>
                     <filter string="Year" name="group_year" context="{'group_by': 'year'}"/>
