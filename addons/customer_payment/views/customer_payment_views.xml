@@ -120,13 +120,6 @@
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="year"/>
-                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
-                <filter string="Processed" name="processed" domain="[('state', '=', 'processed')]"/>
-                <group expand="0" string="Group By">
-                    <filter string="Customer" name="group_partner" context="{'group_by': 'partner_id'}"/>
-                    <filter string="Year" name="group_year" context="{'group_by': 'year'}"/>
-                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
-                </group>
             </search>
         </field>
     </record>
