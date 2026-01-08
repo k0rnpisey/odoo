@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="customer_payment_invoice_running_balance"
+              inherit_id="account.report_invoice_document">
+
+        <!-- Insert after the right-elements div (totals section) -->
+        <xpath expr="//div[@id='right-elements']" position="after">
+
+            <!-- Only show for customer invoices (out_invoice, out_refund) -->
+            <t t-if="o.move_type in ['out_invoice', 'out_refund']">
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h5>Running Balance Summary</h5>
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1. Total Amount of This Invoice</td>
+                                    <td class="text-end">
+                                        <span t-field="o.cp_invoice_amount"
+                                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        2. Total Invoiced Amount of Previous Invoices
+                                        <t t-if="o.invoice_date">
+                                            (Year <span t-esc="o.invoice_date.year"/>)
+                                        </t>
+                                    </td>
+                                    <td class="text-end">
+                                        <span t-field="o.cp_previous_invoices_total"
+                                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr class="fw-bold table-secondary">
+                                    <td>3. Sum of Invoice Amounts (1 + 2)</td>
+                                    <td class="text-end">
+                                        <span t-field="o.cp_cumulative_invoice_total"
+                                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>4. Sum of Payments Have Been Paid</td>
+                                    <td class="text-end">
+                                        <span t-field="o.cp_total_payments"
+                                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                                <tr class="fw-bold table-primary">
+                                    <td>5. Total of Remaining Due to be Paid</td>
+                                    <td class="text-end">
+                                        <span t-field="o.cp_remaining_balance"
+                                              t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+</odoo>
