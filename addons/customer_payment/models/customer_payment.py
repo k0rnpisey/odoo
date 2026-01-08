@@ -27,6 +27,9 @@ class CustomerPayment(models.Model):
 
     # Payment entry related fields
     payment_entry_ids = fields.One2many('payment.entry', 'payment_id', string='Payment Entries')
+    previous_payment_entry_ids = fields.Many2many('payment.entry', string='Previous Payment Entries',
+                                                   compute='_compute_previous_payment_entries',
+                                                   help='Payment entries from previous customer payment records')
     payment_entry_count = fields.Integer(string='Payment Entry Count', compute='_compute_payment_totals', store=True)
     total_payment_amount = fields.Monetary(string='Total Payments', compute='_compute_payment_totals',
                                            store=True, currency_field='currency_id')
@@ -44,11 +47,25 @@ class CustomerPayment(models.Model):
 
     notes = fields.Text(string='Notes')
 
-    @api.model
-    def create(self, vals):
-        if vals.get('name', 'New') == 'New':
-            vals['name'] = self.env['ir.sequence'].next_by_code('customer.payment') or 'New'
-        return super(CustomerPayment, self).create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('name', 'New') == 'New':
+                vals['name'] = self.env['ir.sequence'].next_by_code('customer.payment') or 'New'
+        return super(CustomerPayment, self).create(vals_list)
+
+    @api.depends('partner_id', 'year')
+    def _compute_previous_payment_entries(self):
+        for record in self:
+            if record.partner_id:
+                # Find all payment entries from OTHER customer.payment records for this partner
+                previous_payments = self.env['customer.payment'].search([
+                    ('partner_id', '=', record.partner_id.id),
+                    ('id', '!=', record.id),  # Exclude current record
+                ])
+                record.previous_payment_entry_ids = previous_payments.mapped('payment_entry_ids')
+            else:
+                record.previous_payment_entry_ids = False
 
     @api.depends('invoice_ids', 'invoice_ids.amount_total')
     def _compute_invoice_totals(self):
