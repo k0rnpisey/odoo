@@ -33,7 +33,7 @@ class AccountMove(models.Model):
         string='Total Payments',
         compute='_compute_running_balance_fields',
         currency_field='currency_id',
-        help='Sum of all payment entries from customer payment tracking'
+        help='Sum of all payment entries up to this invoice date. For same-date payments, only includes those created before this invoice (by creation timestamp).'
     )
 
     # Field 5: Remaining balance (Field 3 - Field 4)
@@ -102,12 +102,17 @@ class AccountMove(models.Model):
                 ])
 
                 if customer_payments:
-                    # Sum payment entries from ALL records, up to and including this invoice date
-                    payment_entries = self.env['payment.entry'].search([
+                    # Get all payment entries up to this invoice date
+                    # For same-date payments, only include those created before this invoice
+                    all_payment_entries = self.env['payment.entry'].search([
                         ('payment_id', 'in', customer_payments.ids),
-                        ('payment_date', '<=', record.invoice_date),
+                        '|',  # OR operator
+                            ('payment_date', '<', record.invoice_date),  # Before invoice date
+                            '&',  # AND operator for same date
+                                ('payment_date', '=', record.invoice_date),  # Same date
+                                ('create_date', '<', record.create_date),  # But created earlier
                     ])
-                    record.cp_total_payments = sum(payment_entries.mapped('amount'))
+                    record.cp_total_payments = sum(all_payment_entries.mapped('amount'))
                 else:
                     record.cp_total_payments = 0.0
             else:
