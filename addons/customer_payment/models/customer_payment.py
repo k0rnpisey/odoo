@@ -73,11 +73,23 @@ class CustomerPayment(models.Model):
             record.invoice_count = len(record.invoice_ids)
             record.total_invoice_amount = sum(record.invoice_ids.mapped('amount_total'))
 
-    @api.depends('payment_entry_ids', 'payment_entry_ids.amount')
+    @api.depends('payment_entry_ids', 'payment_entry_ids.amount', 'partner_id')
     def _compute_payment_totals(self):
         for record in self:
-            record.payment_entry_count = len(record.payment_entry_ids)
-            record.total_payment_amount = sum(record.payment_entry_ids.mapped('amount'))
+            # Get previous payment entries manually
+            if record.partner_id:
+                previous_payments = self.env['customer.payment'].search([
+                    ('partner_id', '=', record.partner_id.id),
+                    ('id', '!=', record.id),
+                ])
+                previous_entries = previous_payments.mapped('payment_entry_ids')
+            else:
+                previous_entries = self.env['payment.entry']
+
+            # Count and sum both previous and new payment entries
+            all_entries = previous_entries + record.payment_entry_ids
+            record.payment_entry_count = len(all_entries)
+            record.total_payment_amount = sum(all_entries.mapped('amount'))
 
     @api.depends('total_invoice_amount', 'total_payment_amount')
     def _compute_balance(self):
@@ -111,18 +123,22 @@ class CustomerPayment(models.Model):
             'state': 'processed',
         })
 
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
+        # Send notification to user
+        self.env['bus.bus']._sendone(
+            self.env.user.partner_id,
+            'web.notify',
+            {
+                'type': 'success',
                 'title': _('Success'),
                 'message': _('%s invoices loaded for %s in year %s') % (
                     len(invoices), self.partner_id.name, self.year
                 ),
-                'type': 'success',
                 'sticky': False,
             }
-        }
+        )
+
+        # Return True to let the framework refresh the view
+        return True
 
     def action_reset_to_draft(self):
         """Reset to draft and clear invoices"""
