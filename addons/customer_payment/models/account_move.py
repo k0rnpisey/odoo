@@ -91,16 +91,16 @@ class AccountMove(models.Model):
             if record.invoice_date and record.partner_id:
                 year = record.invoice_date.year
 
-                # Find customer_payment record for this customer/year
-                customer_payment = self.env['customer.payment'].search([
+                # Find ALL customer_payment records for this customer/year
+                customer_payments = self.env['customer.payment'].search([
                     ('partner_id', '=', record.partner_id.id),
                     ('year', '=', year),
-                ], limit=1)
+                ])
 
-                if customer_payment:
-                    # Sum payment entries up to and including this invoice date
+                if customer_payments:
+                    # Sum payment entries from ALL records, up to and including this invoice date
                     payment_entries = self.env['payment.entry'].search([
-                        ('payment_id', '=', customer_payment.id),
+                        ('payment_id', 'in', customer_payments.ids),
                         ('payment_date', '<=', record.invoice_date),
                     ])
                     record.cp_total_payments = sum(payment_entries.mapped('amount'))
