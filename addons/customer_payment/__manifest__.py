@@ -25,6 +25,7 @@
         'views/customer_payment_views.xml',
         'views/menu_views.xml',
         'views/report_invoice.xml',
+        'views/report_customer_payment.xml',
     ],
     'installable': True,
     'application': True,
