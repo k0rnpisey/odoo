@@ -12,12 +12,12 @@ class AccountMove(models.Model):
         help='Total amount of this invoice'
     )
 
-    # Field 2: Other invoices total (same customer, same year, excluding current)
+    # Field 2: Other invoices total (same customer, same year, up to this date)
     cp_previous_invoices_total = fields.Monetary(
         string='Other Invoices Total',
         compute='_compute_running_balance_fields',
         currency_field='currency_id',
-        help='Total of all other invoices for this customer in the same year (excluding current invoice)'
+        help='Total of all other invoices for this customer in the same year up to and including this date (excluding this specific invoice)'
     )
 
     # Field 3: Cumulative invoice total (Field 1 + Field 2)
@@ -60,19 +60,18 @@ class AccountMove(models.Model):
             # Field 1: Current invoice amount
             record.cp_invoice_amount = record.amount_total
 
-            # Field 2: All other invoices in same year (not this specific invoice)
+            # Field 2: All other invoices in same year up to this date (not this specific invoice)
             if record.invoice_date and record.partner_id:
                 year = record.invoice_date.year
                 date_start = fields.Date.from_string(f'{year}-01-01')
-                date_end = fields.Date.from_string(f'{year}-12-31')
 
                 previous_invoices = self.env['account.move'].search([
                     ('partner_id', '=', record.partner_id.id),
                     ('move_type', 'in', ['out_invoice', 'out_refund']),
                     ('state', '=', 'posted'),
                     ('invoice_date', '>=', date_start),
-                    ('invoice_date', '<=', date_end),
-                    ('id', '!=', record.id),  # Exclude current invoice
+                    ('invoice_date', '<=', record.invoice_date),  # Up to and including this date
+                    ('id', '!=', record.id),  # Exclude this specific invoice
                 ])
 
                 # Sum previous invoices (credit notes subtract)
