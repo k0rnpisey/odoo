@@ -3,24 +3,23 @@
     <template id="customer_payment_invoice_running_balance"
               inherit_id="account.report_invoice_document">
 
-        <!-- Insert after the right-elements div (totals section) -->
-        <xpath expr="//div[@id='right-elements']" position="after">
+        <!-- Replace the right-elements div (totals section) with custom table -->
+        <xpath expr="//div[@id='right-elements']" position="replace">
 
-            <!-- Only show for customer invoices (out_invoice, out_refund) -->
+            <!-- Only show custom table for customer invoices (out_invoice, out_refund) -->
             <t t-if="o.move_type in ['out_invoice', 'out_refund']">
                 <div class="row mt-4">
                     <div class="col-12">
-                        <h5>Running Balance Summary</h5>
                         <table class="table table-sm table-bordered">
-                            <thead class="table-light">
+                            <!-- <thead class="table-light">
                                 <tr>
                                     <th>Description</th>
                                     <th class="text-end">Amount</th>
                                 </tr>
-                            </thead>
+                            </thead> -->
                             <tbody>
                                 <tr>
-                                    <td>1. Total Amount of This Invoice</td>
+                                    <td>សរុបវិក័យប័ត្រថ្មី</td>
                                     <td class="text-end">
                                         <span t-field="o.cp_invoice_amount"
                                               t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
@@ -28,7 +27,7 @@
                                 </tr>
                                 <tr>
                                     <td>
-                                        2. Total Invoiced Amount of Previous Invoices
+                                        សរុបវិក័យប័ត្រចាស់
                                         <t t-if="o.invoice_date">
                                             (Year <span t-esc="o.invoice_date.year"/>)
                                         </t>
@@ -39,21 +38,21 @@
                                     </td>
                                 </tr>
                                 <tr class="fw-bold table-secondary">
-                                    <td>3. Sum of Invoice Amounts (1 + 2)</td>
+                                    <td>សរុបវិក័យប័ត្រថ្មី + ចាស់</td>
                                     <td class="text-end">
                                         <span t-field="o.cp_cumulative_invoice_total"
                                               t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>4. Sum of Payments Have Been Paid</td>
+                                    <td>ទឹកប្រាក់សង</td>
                                     <td class="text-end">
                                         <span t-field="o.cp_total_payments"
                                               t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
                                 </tr>
                                 <tr class="fw-bold table-primary">
-                                    <td>5. Total of Remaining Due to be Paid</td>
+                                    <td>ជំពាក់សរុបទាំងអស់</td>
                                     <td class="text-end">
                                         <span t-field="o.cp_remaining_balance"
                                               t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
@@ -62,6 +61,21 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </t>
+            <!-- For other invoice types (vendor bills, etc.), show standard totals -->
+            <t t-else="">
+                <div id="right-elements">
+                    <table class="table table-sm table-borderless">
+                        <tbody>
+                            <tr class="border-black fw-bold">
+                                <td>Total</td>
+                                <td class="text-end">
+                                    <span t-field="o.amount_total"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </t>
         </xpath>
