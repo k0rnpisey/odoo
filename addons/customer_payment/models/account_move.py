@@ -17,7 +17,7 @@ class AccountMove(models.Model):
         string='Other Invoices Total',
         compute='_compute_running_balance_fields',
         currency_field='currency_id',
-        help='Total of all other invoices for this customer in the same year up to and including this date (excluding this specific invoice)'
+        help='Total of all other invoices for this customer in the same year up to this date. For same-date invoices, only includes those with lower ID (created earlier).'
     )
 
     # Field 3: Cumulative invoice total (Field 1 + Field 2)
@@ -65,13 +65,17 @@ class AccountMove(models.Model):
                 year = record.invoice_date.year
                 date_start = fields.Date.from_string(f'{year}-01-01')
 
+                # Domain: Either before this date, OR (same date with lower ID)
                 previous_invoices = self.env['account.move'].search([
                     ('partner_id', '=', record.partner_id.id),
                     ('move_type', 'in', ['out_invoice', 'out_refund']),
                     ('state', '=', 'posted'),
                     ('invoice_date', '>=', date_start),
-                    ('invoice_date', '<=', record.invoice_date),  # Up to and including this date
-                    ('id', '!=', record.id),  # Exclude this specific invoice
+                    '|',  # OR operator
+                        ('invoice_date', '<', record.invoice_date),  # Before this date
+                        '&',  # AND operator for same date
+                            ('invoice_date', '=', record.invoice_date),  # Same date
+                            ('id', '<', record.id),  # But lower ID (earlier)
                 ])
 
                 # Sum previous invoices (credit notes subtract)
