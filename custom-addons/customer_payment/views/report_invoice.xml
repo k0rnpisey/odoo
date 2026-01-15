@@ -19,18 +19,23 @@
 
     <!-- Custom Khmer Invoice Template (completely independent) -->
     <template id="customer_payment_khmer_invoice_document">
-        <div class="article" style="margin: 0; padding: 10mm;">
+        <div class="article" style="margin: 0; padding: 10mm; font-size: 16px;">
 
                 <!-- Company Header -->
-                <div class="row mb-3">
-                    <div class="col-12 text-center">
-                        <h3 style="margin: 0; font-weight: bold; font-size: 24px;">
+                <div style="position: relative; min-height: 175px; margin-bottom: 15px;">
+                    <!-- Company Logo (absolute left) -->
+                    <div style="position: absolute; left: 0; top: 50%; transform: translateY(-50%);">
+                        <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="height: 200px; width: auto; margin-left: -50px;" alt="Company Logo"/>
+                    </div>
+                    <!-- Company Info (absolute center) -->
+                    <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center;">
+                        <h3 style="margin: 0; font-weight: bold; font-size: 32px;">
                             <span t-field="o.company_id.name"/>
                         </h3>
                         <h4 style="margin: 0; font-weight: bold; font-size: 18px;">
                             រោងម៉ាស៊ីនតកិនស្រូវ ទិញ លក់ ស្រូវ អង្ករ ជី និងថ្នាំកសិកម្មគ្រប់ប្រភេទ
                         </h4>
-                        <div style="margin-top: 5px; font-size: 12px;">
+                        <div style="margin-top: 5px; font-size: 16px;">
                             <div t-if="o.company_id.street or o.company_id.street2">
                                 <span t-field="o.company_id.street"/>
                                 <span t-if="o.company_id.street2" t-field="o.company_id.street2"/>
@@ -46,8 +51,8 @@
                 <div class="row mb-4 align-items-start">
                     <!-- Customer Information (Left) -->
                     <div class="col-6">
-                        <div style="border: 1px solid #dee2e6; padding: 15px; border-radius: 5px;">
-                            <h5 style="margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid #999;">អតិថិជន</h5>
+                        <div style="border: 1px solid #000000; padding: 15px; border-radius: 5px; font-size: 18px;">
+                            <h5 style="margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid #999; font-size: 20px;">អតិថិជន</h5>
                             <div style="margin-top: 0;">
                                 <strong>ឈ្មោះ:</strong> <span t-field="o.partner_id.name"/><br/>
                                 <strong>អាសយដ្ឋាន:</strong>
@@ -68,8 +73,8 @@
 
                     <!-- Invoice Reference (Right) -->
                     <div class="col-6">
-                        <div style="border: 1px solid #dee2e6; padding: 15px; border-radius: 5px;">
-                            <h5 style="margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid #999; text-align: right;">យោង</h5>
+                        <div style="border: 1px solid #000000; padding: 15px; border-radius: 5px; font-size: 18px;">
+                            <h5 style="margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid #999; text-align: right; font-size: 20px;">យោង</h5>
                             <div style="margin-top: 0; text-align: left;">
                                 <strong>លេខ:</strong> <span t-field="o.name"/><br/>
                                 <strong>កាលបរិច្ឆេទ:</strong>
@@ -81,7 +86,7 @@
 
                 <div class="clearfix invoice_main">
                     <div class="page mb-4">
-                        <table class="o_has_total_table table o_main_table table-bordered mb-0" name="invoice_line_table">
+                        <table class="o_has_total_table table o_main_table table-bordered mb-0" name="invoice_line_table" style="font-size: 18px;">
                             <thead t-attf-style="#{has_long_desc and 'display: table-row-group;' or ''}">
                                 <tr>
                                     <th name="th_product" class="text-center"><span>ល.រ</span></th>
@@ -271,7 +276,7 @@
                         <!-- Empty space on left -->
                     </div>
                     <div class="col-5">
-                        <table class="table table-sm table-bordered">
+                        <table class="table table-sm table-bordered" style="font-size: 18px;">
                             <tbody>
                                 <tr>
                                     <td style="width: 70%;">សរុបវិក័យប័ត្រថ្មី</td>
@@ -314,10 +319,10 @@
                 </div>
 
                 <!-- Signature Section -->
-                <div class="row mt-5">
+                <div class="row mt-5" style="font-size: 18px;">
                     <div class="col-6 text-center">
                         <div style="margin-top: 80px; border-top: 1px solid #999; display: inline-block; padding: 5px 40px;">
-                            អតិថិជន ហត្ថលេខា
+                            អ្នកលក់ ហត្ថលេខា
                         </div>
                     </div>
                     <div class="col-6 text-center">
