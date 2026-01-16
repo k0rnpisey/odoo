@@ -75,19 +75,13 @@
                     <div class="col-6">
                         <div style="border: 1px solid #000000; padding: 15px; border-radius: 5px; font-size: 18px;">
                             <h5 style="margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid #999; text-align: right; font-size: 20px;">យោង</h5>
-                            <div style="margin-top: 0; text-align: left;">
-                                <div style="margin-bottom: 8px;">
-                                    <strong style="font-weight: 700;">លេខ:</strong>
-                                    <span t-field="o.name" style="font-weight: 400; color: #444;"/>
-                                </div>
-                                <div style="margin-bottom: 8px;">
-                                    <strong style="font-weight: 700;">កាលបរិច្ឆេទវិក្កយបត្រ:</strong>
-                                    <span t-field="o.invoice_date" t-options="{&quot;format&quot;: &quot;dd/MM/yyyy&quot;}" style="font-weight: 400; color: #444;"/>
-                                </div>
-                                <div>
-                                    <strong style="font-weight: 700;">កាលបរិច្ឆេទចេញវិក្កយបត្រ:</strong>
-                                    <span t-esc="(datetime.datetime.utcnow() + datetime.timedelta(hours=7)).strftime('%d/%m/%Y %H:%M')" style="font-weight: 400; color: #444;"/>
-                                </div>
+                            <div style="margin-top: 0; color: #333;">
+                                <strong style="color: #000;">លេខ:</strong>
+                                    <span t-field="o.name" /><br/>
+                                <strong style="color: #000;">កាលបរិច្ឆេទវិក្កយបត្រ:</strong>
+                                    <span t-field="o.invoice_date" t-options="{&quot;format&quot;: &quot;dd/MM/yyyy&quot;}" /><br/>
+                                <strong style="color: #000;">កាលបរិច្ឆេទចេញវិក្កយបត្រ:</strong>
+                                    <span t-esc="(datetime.datetime.utcnow() + datetime.timedelta(hours=7)).strftime('%d/%m/%Y %H:%M')" />
                             </div>
                         </div>
                     </div>
@@ -97,7 +91,7 @@
                     <div class="page mb-4">
                         <table class="o_has_total_table table o_main_table table-bordered mb-0" name="invoice_line_table" style="font-size: 18px;">
                             <thead t-attf-style="#{has_long_desc and 'display: table-row-group;' or ''}">
-                                <tr>
+                                <tr style="background-color: #e9ecef; color: #0000; font-weight: bold;">
                                     <th name="th_product" class="text-center"><span>ល.រ</span></th>
                                     <th name="th_description" class="text-start"><span>រាយមុខទំនិញ</span></th>
                                     <th name="th_quantity" class="text-end"><span>ចំនួន</span></th>
@@ -327,21 +321,17 @@
                     </div>
                 </div>
 
-                <!-- Payment Note -->
-                <div class="row mt-3" style="font-size: 20px; color: #1a237e;">
-                    <div class="col-12">
+                <!-- Payment Note & Signature Section -->
+                <div class="row" style="font-size: 18px; margin-top: 80px;">
+                    <div class="col-4 text-end align-self-end" style="font-size: 20px; color: #1a237e;">
                         <strong style="border-bottom: 1px solid #1a237e; font-size: 22px; color: #1a237e;">★ បញ្ចាក់:</strong> ជឿបានរយៈពេល3ខែបេីលេីសសុំគិតការ3%
                     </div>
-                </div>
-
-                <!-- Signature Section -->
-                <div class="row mt-5" style="font-size: 18px;">
-                    <div class="col-6 text-center">
+                    <div class="col-4 text-center">
                         <div style="margin-top: 80px; border-top: 1px solid #999; display: inline-block; padding: 5px 40px;">
                             អ្នកលក់ ហត្ថលេខា
                         </div>
                     </div>
-                    <div class="col-6 text-center">
+                    <div class="col-4 text-end">
                         <div style="margin-top: 80px; border-top: 1px solid #999; display: inline-block; padding: 5px 40px;">
                             អតិថិជន ហត្ថលេខា
                         </div>
