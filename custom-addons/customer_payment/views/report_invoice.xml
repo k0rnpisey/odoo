@@ -25,7 +25,7 @@
                 <div style="position: relative; min-height: 175px; margin-bottom: 15px;">
                     <!-- Company Logo (absolute left) -->
                     <div style="position: absolute; left: 0; top: 50%; transform: translateY(-50%);">
-                        <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="height: 200px; width: auto; margin-left: -50px;" alt="Company Logo"/>
+                        <img t-if="o.company_id.logo" t-att-src="image_data_uri(o.company_id.logo)" style="height: 200px; width: auto; margin-left: -70px;" alt="Company Logo"/>
                     </div>
                     <!-- Company Info (absolute center) -->
                     <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center;">
