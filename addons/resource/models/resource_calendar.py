@@ -415,13 +415,13 @@ class ResourceCalendar(models.Model):
                     # For flexible Calendars, we create intervals to fill in the weekly intervals with the average daily hours
                     # until the full time required hours are met. This gives us the most correct approximation when looking at a daily
                     # and weekly range for time offs and overtime calculations and work entry generation
-                    start_date = start_datetime.date()
+                    start_date = start_datetime
                     end_datetime_adjusted = end_datetime - relativedelta(seconds=1)
-                    end_date = end_datetime_adjusted.date()
+                    end_date = end_datetime_adjusted
 
                     calendar = resource_calendars[resource] if resource else self
 
-                    full_time_required_hours = calendar.full_time_required_hours
+                    max_hours_per_week = calendar.hours_per_week
                     max_hours_per_day = calendar.hours_per_day
 
                     intervals = []
@@ -435,11 +435,11 @@ class ResourceCalendar(models.Model):
 
                         if current_start_day < start_date:
                             prior_days = (start_date - current_start_day).days
-                            prior_hours = min(full_time_required_hours, max_hours_per_day * prior_days)
+                            prior_hours = min(max_hours_per_week, max_hours_per_day * prior_days)
                         else:
                             prior_hours = 0
 
-                        remaining_hours = max(0, full_time_required_hours - prior_hours)
+                        remaining_hours = max(0, max_hours_per_week - prior_hours)
                         remaining_hours = min(remaining_hours, (end_dt - start_dt).total_seconds() / 3600)
 
                         current_day = week_start
@@ -500,14 +500,13 @@ class ResourceCalendar(models.Model):
         """
         assert start_dt.tzinfo and end_dt.tzinfo
 
-        if not resources:
-            resources = self.env['resource.resource']
-            resources_list = [resources]
-        else:
-            resources_list = list(resources) + [self.env['resource.resource']]
         if domain is None:
             domain = [('time_type', '=', 'leave')]
+
+        resources_list = list(resources) if resources else []
+
         if self:
+            resources_list.append(self.env['resource.resource'])
             domain = domain + [('calendar_id', 'in', [False] + self.ids)]
 
         # for the computation, express all datetimes in UTC
@@ -516,7 +515,6 @@ class ResourceCalendar(models.Model):
             ('resource_id', 'in', [False] + [r.id for r in resources_list]),
             ('date_from', '<=', end_dt.astimezone(utc).replace(tzinfo=None)),
             ('date_to', '>=', start_dt.astimezone(utc).replace(tzinfo=None)),
-            ('company_id', 'in', [False] + ([r.company_id.id for r in resources_list if r.company_id] or [self.company_id.id])),
         ]
 
         # retrieve leave intervals in (start_dt, end_dt)
@@ -586,7 +584,10 @@ class ResourceCalendar(models.Model):
         resources_work_intervals = self._work_intervals_batch(start_dt, end_dt, resources, domain, tz)
         result = {}
         for resource in resources_list:
-            if resource and resource._is_fully_flexible():
+            if resource and resource._is_flexible():
+                leaves = self._leave_intervals_batch(start_dt, end_dt, resource, domain, tz=tz)
+                if res_leaves := leaves.get(resource.id, []):
+                    result[resource.id] = [(i[0], i[1]) for i in res_leaves]
                 continue
             work_intervals = [(start, stop) for start, stop, meta in resources_work_intervals[resource.id]]
             # start + flatten(intervals) + end
@@ -693,7 +694,10 @@ class ResourceCalendar(models.Model):
         self.ensure_one()
         hour_count = 0.0
         for attendance in self._get_global_attendances():
-            hour_count += attendance.hour_to - attendance.hour_from
+            if self.duration_based:
+                hour_count += attendance.duration_hours
+            else:
+                hour_count += attendance.hour_to - attendance.hour_from
         return hour_count / 2 if self.two_weeks_calendar else hour_count
 
     def _get_hours_per_day(self):
@@ -976,9 +980,11 @@ class ResourceCalendar(models.Model):
         if day_period:
             attendances = [att for att in init_attendances if att.day_period == day_period]
             for attendance in filter(lambda att: att.day_period == 'full_day', init_attendances):
+                # Split full-day attendances at their midpoint.
+                half_time = (attendance.hour_from + attendance.hour_to) / 2
                 attendances.append(attendance._replace(
-                    hour_from=attendance.hour_from if day_period == 'morning' else 12,
-                    hour_to=attendance.hour_to if day_period == 'afternoon' else 12,
+                    hour_from=attendance.hour_from if day_period == 'morning' else half_time,
+                    hour_to=attendance.hour_to if day_period == 'afternoon' else half_time,
                 ))
 
         else:

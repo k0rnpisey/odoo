@@ -38,6 +38,9 @@ class ResPartner(models.Model):
 
     @api.onchange('invoice_edi_format', 'peppol_endpoint', 'peppol_eas')
     def _onchange_verify_peppol_status(self):
+        if not self.commercial_partner_id:
+            # avoid issue when commercial_partner_id is on the view
+            self._compute_commercial_partner()
         self.button_account_peppol_check_partner_endpoint()
 
     # -------------------------------------------------------------------------
@@ -223,6 +226,18 @@ class ResPartner(models.Model):
             res._update_peppol_state_per_company()
         return res
 
+    def _compute_peppol_endpoint(self):
+        # Don't recompute on partners corresponding to registered companies
+        partners_not_to_recompute = self._get_partners_to_skip_peppol_computation()
+        partners_to_recompute = self.browse([partner.id for partner in self if partner._origin not in partners_not_to_recompute])
+        super(ResPartner, partners_to_recompute)._compute_peppol_endpoint()
+
+    def _compute_peppol_eas(self):
+        # Don't recompute on partners corresponding to registered companies
+        partners_not_to_recompute = self._get_partners_to_skip_peppol_computation()
+        partners_to_recompute = self.browse([partner.id for partner in self if partner._origin not in partners_not_to_recompute])
+        super(ResPartner, partners_to_recompute)._compute_peppol_eas()
+
     # -------------------------------------------------------------------------
     # BUSINESS ACTIONS
     # -------------------------------------------------------------------------
@@ -250,21 +265,6 @@ class ResPartner(models.Model):
             self_partner.peppol_eas,
             self_partner._get_peppol_edi_format(),
         )
-
-        if (
-                new_value != 'valid'
-                and self_partner.peppol_eas in ('0208', '9925')
-        ):
-            # checks the inverse `eas:endpoint` if the belgian user was not found on Peppol in the first try
-            inverse_eas = '9925' if self_partner.peppol_eas == '0208' else '0208'
-            inverse_endpoint = f'BE{self_partner.peppol_endpoint}' if self_partner.peppol_eas == '0208' else self_partner.peppol_endpoint[2:]
-            if (peppol_state := self._get_peppol_verification_state(inverse_endpoint, inverse_eas, self_partner._get_peppol_edi_format())) == 'valid':
-                self_partner.write({
-                    'peppol_eas': inverse_eas,
-                    'peppol_endpoint': inverse_endpoint,
-                })
-                new_value = peppol_state
-
         if old_value != new_value:
             self_partner.peppol_verification_state = new_value
             self._log_verification_state_update(company, old_value, self_partner.peppol_verification_state)
@@ -296,3 +296,8 @@ class ResPartner(models.Model):
         frontend_writable_fields.update({'peppol_eas', 'peppol_endpoint'})
 
         return frontend_writable_fields
+
+    def _get_partners_to_skip_peppol_computation(self):
+        return self.env['res.company'].search([
+            ('account_peppol_proxy_state', 'in', self.env['account_edi_proxy_client.user']._get_can_send_domain()),
+        ]).mapped('partner_id')

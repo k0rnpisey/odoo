@@ -13,17 +13,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 16.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-09 18:36+0000\n"
-"PO-Revision-Date: 2026-01-09 15:57+0000\n"
+"POT-Creation-Date: 2026-04-10 18:37+0000\n"
+"PO-Revision-Date: 2026-04-24 07:55+0000\n"
 "Last-Translator: Bren Driesen <brdri@odoo.com>\n"
-"Language-Team: Dutch <https://translate.odoo.com/projects/odoo-19/stock/nl/"
-">\n"
+"Language-Team: Dutch <https://translate.odoo.com/projects/odoo-19/stock/nl/>"
+"\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.14.3\n"
+"X-Generator: Weblate 5.17\n"
 
 #. module: stock
 #. odoo-python
@@ -86,6 +86,16 @@ msgid ""
 msgstr ""
 "\n"
 "(%(serial_number)s) bestaat op locatie %(location)s"
+
+#. module: stock
+#. odoo-python
+#: code:addons/stock/models/stock_move.py:0
+msgid ""
+"\n"
+"Package: %s"
+msgstr ""
+"\n"
+"Pakket: %s"
 
 #. module: stock
 #. odoo-python
@@ -332,7 +342,7 @@ msgstr "'Bewerkingssoort - %s' % object.name"
 #. module: stock
 #: model:ir.actions.report,print_report_name:stock.action_report_picking_packages
 msgid "'Packages - %s' % (object.name)"
-msgstr "'Verpakkingen - %s' % (object.name)"
+msgstr "'Pakketten - %s' % (object.name)"
 
 #. module: stock
 #: model:ir.actions.report,print_report_name:stock.action_report_picking
@@ -356,7 +366,7 @@ msgstr "(barcode document)"
 #: model_terms:ir.ui.view,arch_db:stock.report_package_barcode
 #: model_terms:ir.ui.view,arch_db:stock.report_picking
 msgid "(package barcode)"
-msgstr "(barcode verpakking)"
+msgstr "(barcode pakket)"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_picking
@@ -483,52 +493,9 @@ msgid "1 Week"
 msgstr "1 week"
 
 #. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.report_delivery_document
-#: model_terms:ir.ui.view,arch_db:stock.stock_report_delivery_aggregated_move_lines
-msgid "1.00"
-msgstr "1.00"
-
-#. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.report_package_barcode_content
-msgid "12.0"
-msgstr "12.0"
-
-#. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.report_generic_barcode
-msgid "1234567890"
-msgstr "1234567890"
-
-#. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.report_lot_label
-msgid "12345678901"
-msgstr "12345678901"
-
-#. module: stock
 #: model:ir.model.fields.selection,name:stock.selection__stock_picking_type__product_label_format__2x7xprice
 msgid "2 x 7 with price"
 msgstr "2 x 7 met prijs"
-
-#. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.report_package_barcode
-msgid "2021-09-01"
-msgstr "2021-09-01"
-
-#. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.report_package_barcode_small
-msgid "2023-01-01"
-msgstr "01-01-2023"
-
-#. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.report_picking
-msgid "2023-09-24"
-msgstr "2023-09-24"
-
-#. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.report_delivery_document
-#: model_terms:ir.ui.view,arch_db:stock.report_package_barcode_content
-#: model_terms:ir.ui.view,arch_db:stock.report_picking
-msgid "3.00"
-msgstr "3.00"
 
 #. module: stock
 #: model:ir.model.fields.selection,name:stock.selection__lot_label_layout__print_format__4x12
@@ -555,11 +522,6 @@ msgstr "4 x 12 met prijs"
 #: model:ir.model.fields.selection,name:stock.selection__stock_picking_type__product_label_format__4x7xprice
 msgid "4 x 7 with price"
 msgstr "4 x 7 met prijs"
-
-#. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.report_package_barcode_content
-msgid "54326786758"
-msgstr "54326786758"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_warn_insufficient_qty_form_view
@@ -741,17 +703,17 @@ msgstr "<span class=\"col-6\">Wachten</span>"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_report_delivery_no_package_section_line
 msgid "<span class=\"ms-1\">Products with no package assigned</span>"
-msgstr "<span class=\"ms-1\">Producten zonder toegewezen verpakking</span>"
+msgstr "<span class=\"ms-1\">Producten zonder toegewezen pakket</span>"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_package_barcode
 msgid "<span class=\"mt0 float-start\">No assigned package</span>"
-msgstr "<span class=\"mt0 float-start\">Geen toegewezen verpakking</span>"
+msgstr "<span class=\"mt0 float-start\">Geen toegewezen pakket</span>"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.res_config_settings_view_form
 msgid "<span class=\"o_form_label\">Scannable Package Contents</span>"
-msgstr "<span class=\"o_form_label\">Scanbare verpakkingsinhoud</span>"
+msgstr "<span class=\"o_form_label\">Scanbare pakketinhoud</span>"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.view_picking_form
@@ -816,7 +778,7 @@ msgstr "<span class=\"o_stat_text\">Uit:</span>"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.view_picking_form
 msgid "<span class=\"o_stat_text\">Packages</span>"
-msgstr "<span class=\"o_stat_text\">Verpakkingen</span>"
+msgstr "<span class=\"o_stat_text\">Pakketten</span>"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_scrap_form_view
@@ -854,7 +816,7 @@ msgid ""
 "                                        </span>"
 msgstr ""
 "<span class=\"o_stat_value text-muted\">\n"
-"                                            Verwacht\n"
+"                                            Voorspeld\n"
 "                                        </span>"
 
 #. module: stock
@@ -870,12 +832,6 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:stock.product_view_kanban_catalog
 msgid "<span class=\"text-muted small\"> On Hand</span>"
 msgstr "<span class=\"text-muted small\"> Op voorraad</span>"
-
-#. module: stock
-#: model_terms:ir.ui.view,arch_db:stock.product_form_view_procurement_button
-#: model_terms:ir.ui.view,arch_db:stock.product_template_form_view_procurement_button
-msgid "<span groups=\"!uom.group_uom\">On Hand</span>"
-msgstr "<span groups=\"!uom.group_uom\">Aanwezige voorraad</span>"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.res_config_settings_view_form
@@ -895,7 +851,7 @@ msgstr "<span>OBTRETU</span>"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_package_barcode_small
 msgid "<span>Package Type: </span>"
-msgstr "<span>Verpakkingssoort:</span>"
+msgstr "<span>Pakkettype:</span>"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_delivery_document
@@ -937,7 +893,7 @@ msgstr "<strong>Contactpersoon</strong>"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_delivery_document
 msgid "<strong>Customer</strong>"
-msgstr ""
+msgstr "<strong>Klant</strong>"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_delivery_document
@@ -952,7 +908,7 @@ msgstr "<strong>Afleveradres:</strong>"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_delivery_document
 msgid "<strong>Delivery Address</strong>"
-msgstr ""
+msgstr "<strong>Afleveradres</strong>"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_picking
@@ -1024,7 +980,7 @@ msgstr "<strong>Verpakkingsdatum:</strong>"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_package_barcode
 msgid "<strong>Package Type:</strong>"
-msgstr "<strong>Verpakkingssoort:</strong>"
+msgstr "<strong>Pakkettype:</strong>"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_delivery_document
@@ -1114,7 +1070,7 @@ msgstr "? Dit kan leiden tot tegenstrijdigheden in je voorraad."
 #. module: stock
 #: model:ir.model.constraint,message:stock.constraint_stock_package_type_barcode_uniq
 msgid "A barcode can only be assigned to one package type!"
-msgstr "Een barcode kan enkel aan één verpakkingsssoort worden toegekend!"
+msgstr "Een barcode kan maar aan één pakkettype worden toegekend!"
 
 #. module: stock
 #. odoo-python
@@ -1122,7 +1078,7 @@ msgstr "Een barcode kan enkel aan één verpakkingsssoort worden toegekend!"
 msgid ""
 "A package can't have one of its contained packages as destination container."
 msgstr ""
-"Een verpakking kan niet een van de verpakkingen die het bevat als "
+"Een pakket kan niet een van de pakketten die het bevat als "
 "bestemmingscontainer hebben."
 
 #. module: stock
@@ -1135,7 +1091,7 @@ msgstr "Er bestaat al een aanvullingsregel voor dit product op deze locatie."
 #: model:ir.model.fields,help:stock.field_product_template__is_storable
 #: model:ir.model.fields,help:stock.field_stock_move__is_storable
 msgid "A storable product is a product for which you manage stock."
-msgstr "Een houdbaar product is een product waarvan je de voorraad beheert."
+msgstr "Een voorraadproduct is een product waarvan je de voorraad beheert."
 
 #. module: stock
 #: model:res.groups,name:stock.group_warning_stock
@@ -1198,12 +1154,12 @@ msgstr "Activiteitsfase"
 #: model:ir.model.fields,field_description:stock.field_stock_lot__activity_type_icon
 #: model:ir.model.fields,field_description:stock.field_stock_picking__activity_type_icon
 msgid "Activity Type Icon"
-msgstr "Activiteitensoort icoon"
+msgstr "Activiteitstype icoon"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.view_picking_internal_search
 msgid "Activity type"
-msgstr "Soort activiteit"
+msgstr "Activiteitstype"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_picking_view_activity
@@ -1353,7 +1309,7 @@ msgstr "Alle categorieën"
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_package__all_children_package_ids
 msgid "All Children Package"
-msgstr "Alle onderliggende verpakkingen"
+msgstr "Alle onderliggende pakketten"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_putaway_list
@@ -1368,7 +1324,6 @@ msgstr "Alle overdrachten"
 #. module: stock
 #. odoo-javascript
 #: code:addons/stock/static/src/views/search/stock_report_search_panel.xml:0
-#: model_terms:ir.ui.view,arch_db:stock.stock_location_route_form_view
 msgid "All Warehouses"
 msgstr "Alle magazijnen"
 
@@ -1499,7 +1454,7 @@ msgstr "Toepasbaar op"
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_route__package_type_selectable
 msgid "Applicable on Package Type"
-msgstr "Van toepassing op verpakkingssoort"
+msgstr "Van toepassing op pakkettype"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_route__product_selectable
@@ -1671,12 +1626,12 @@ msgstr "Automatisch afdrukken van serie-/partijnummer-labels"
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_picking_type__auto_print_package_label
 msgid "Auto Print Package Label"
-msgstr "Verpakkingslabel automatisch afdrukken"
+msgstr "Pakketlabel automatisch afdrukken"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_picking_type__auto_print_packages
 msgid "Auto Print Packages"
-msgstr "Automatische afdrukken verpakkingen"
+msgstr "Pakketten automatisch afdrukken"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_picking_type__auto_print_product_labels
@@ -1754,15 +1709,15 @@ msgid ""
 "Otherwise, this includes goods stored in any Stock Location with 'internal' "
 "type."
 msgstr ""
-"Beschikbare hoeveelheid (berekend als hoeveelheid op voorraad - "
-"gereserveerde hoeveelheid - hoeveelheid die verwijderd moet worden)\n"
-"In een context met een voorraadlocatie omvat dit de goederen die in deze "
+"Beschikbare hoeveelheid (berekend als Aanwezige voorraad - gereserveerde "
+"hoeveelheid - te verwijderen hoeveelheid)\n"
+"In de context van één voorraadlocatie omvat dit de goederen die in deze "
 "locatie of in een van de onderliggende locaties zijn opgeslagen.\n"
-"In een context met een magazijn omvat dit de goederen die in de "
-"voorraadlocatie van dit magazijn of in een van de onderliggende locaties "
-"zijn opgeslagen.\n"
-"Anders omvat dit de goederen die in alle voorraadlocaties met type 'intern' "
-"zijn opgeslagen."
+"In de context van één magazijn omvat dit de goederen die zijn opgeslagen in "
+"de voorraadlocatie van dat magazijn of in een van de onderliggende "
+"locaties.\n"
+"In andere gevallen omvat dit de goederen die zijn opgeslagen in elke "
+"voorraadlocatie van het type 'intern'."
 
 #. module: stock
 #. odoo-javascript
@@ -1956,7 +1911,7 @@ msgid ""
 "Can't move a container having packages in another location (%"
 "(old_location)s) to a different location (%(new_location)s)."
 msgstr ""
-"Kan een container met verpakkingen op een andere locatie (%(old_location)s) "
+"Kan een container met pakketten op een andere locatie (%(old_location)s) "
 "niet verplaatsen naar een andere locatie (%(new_location)s)."
 
 #. module: stock
@@ -1984,7 +1939,7 @@ msgstr "Geannuleerd"
 #. odoo-python
 #: code:addons/stock/models/stock_package.py:0
 msgid "Cannot move an empty package"
-msgstr "Kan een lege verpakking niet verplaatsen"
+msgstr "Kan een leeg pakket niet verplaatsen"
 
 #. module: stock
 #. odoo-python
@@ -2001,7 +1956,7 @@ msgstr "Capaciteit"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_storage_category_form
 msgid "Capacity by Package"
-msgstr "Capaciteit per verpakking"
+msgstr "Capaciteit per pakket"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_storage_category_form
@@ -2119,6 +2074,11 @@ msgstr "Label lay-out kiezen"
 #: code:addons/stock/models/stock_picking.py:0
 msgid "Choose Type of Labels To Print"
 msgstr "Kies het type labels om af te drukken"
+
+#. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.stock_location_route_form_view
+msgid "Choose Warehouses"
+msgstr "Kies magazijnen"
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_quantity_history__inventory_datetime
@@ -2570,7 +2530,7 @@ msgstr "Maak een nieuwe bewerkingssoort aan"
 #. module: stock
 #: model_terms:ir.actions.act_window,help:stock.action_package_view
 msgid "Create a new package"
-msgstr "Maak een nieuwe verpakking aan"
+msgstr "Nieuw pakket aanmaken"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.res_config_settings_view_form
@@ -2595,8 +2555,8 @@ msgstr "Maak eenvoudig producten aan door te scannen aan de hand van"
 #: model_terms:ir.actions.act_window,help:stock.action_product_stock_view
 msgid "Create some storable products to see their stock info in this view."
 msgstr ""
-"Maak een aantal producten die kunnen worden opgeslagen om hun "
-"voorraadinformatie in deze weergave te zien."
+"Maak een aantal voorraadproducten om hun voorraadinformatie in deze weergave "
+"te zien."
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_lot_label_layout__create_uid
@@ -2744,15 +2704,16 @@ msgid ""
 "Otherwise, this includes goods stored in any Stock Location with 'internal' "
 "type."
 msgstr ""
-"Werkelijke aantal. \n"
-"Bij gebruik van een enkele voorraadlocatie, omvat dit de goederen opgeslagen "
+"Huidig aantal producten. \n"
+"Bij gebruik van een enkele voorraadlocatie omvat dit de goederen opgeslagen "
 "in deze locatie, of één van de onderliggende locaties. \n"
-"Bij gebruik van een enkel magazijn, omvat dit de goederen die in de "
+"Bij gebruik van een enkel magazijn omvat dit de goederen die in de "
 "voorraadlocatie van dit magazijn zijn opgeslagen, of één van de "
 "onderliggende locaties.\n"
-"die in de voorraadlocatie van het magazijn van deze winkel zijn opgeslagen, "
-"of één van de onderliggende locaties. \n"
-"Anders, dit omvat goederen die zijn opgeslagen in alle voorraadlocaties van "
+"Bij gebruik van een winkelmagazijn omvat dit de goederen die in de "
+"voorraadlocatie van het magazijn van deze winkel zijn opgeslagen, of één van "
+"de onderliggende locaties. \n"
+"Anders omvat dit goederen die zijn opgeslagen in alle voorraadlocaties van "
 "het type 'intern'."
 
 #. module: stock
@@ -2908,7 +2869,7 @@ msgstr ""
 "minimumvoorraad zakt. Als je niets kan bestellen en er toch een deadline "
 "verschijnt, kan dat komen doordat er een toekomstige levering wordt verwacht "
 "zodra de minimumhoeveelheid is bereikt (potentieel voorraadtekort). "
-"Controleer het prognoserapport."
+"Controleer het voorspellingsrapport."
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_location__next_inventory_date
@@ -3104,8 +3065,8 @@ msgstr ""
 "de deur uit.\n"
 "Dichtstbijzijnde locatie: producten/partijen die zich het dichtst bij de "
 "doelbestemming bevinden, gaan als eerste de deur uit.\n"
-"Minste verpakkingen: producten/partijen in verpakkingen met de minste "
-"hoeveelheid gaan als eerste de deur uit.\n"
+"Minste pakketten: producten/partijen in pakketten met de minste hoeveelheid "
+"gaan als eerste de deur uit.\n"
 "FEFO: producten/partijen met de eerstvolgende vervaldatum gaan als eerste de "
 "deur uit (de beschikbaarheid van deze methode hangt af van de instelling "
 "'Vervaldatums')."
@@ -3270,7 +3231,7 @@ msgstr "Weergavenaam demo"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_lot_label
 msgid "Demo Lot/SN"
-msgstr "Demokavel/SN"
+msgstr "Demo partij/SN"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_lot_label
@@ -3354,12 +3315,12 @@ msgstr "Beste locatie"
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_quant_relocate__dest_package_id
 msgid "Dest Package"
-msgstr "Bestemingsverpakking"
+msgstr "Bestemingspakket"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_quant_relocate__dest_package_id_domain
 msgid "Dest Package Id Domain"
-msgstr "Bestemmingsverpakking-ID-domein"
+msgstr "Bestemmingspakket-ID-domein"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_put_in_pack__location_dest_id
@@ -3423,17 +3384,17 @@ msgstr "Bestemming verplaatsingen"
 #: model_terms:ir.ui.view,arch_db:stock.stock_move_line_view_search
 #: model_terms:ir.ui.view,arch_db:stock.view_move_line_form
 msgid "Destination Package"
-msgstr "Bestemmingsverpakking"
+msgstr "Bestemmingspakket"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_move_line__result_package_dest_name
 msgid "Destination Package Name"
-msgstr "Naam bestemmingsverpakking"
+msgstr "Naam bestemmingspakket"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.message_body
 msgid "Destination Package:"
-msgstr "Bestemmingsverpakking:"
+msgstr "Bestemmingspakket:"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_package__location_dest_id
@@ -3668,8 +3629,8 @@ msgid ""
 "excessive stock . Check the Forecasted Report  before reordering"
 msgstr ""
 "Door toekomstige binnenkomende leveringen kan het voorkomen dat je een "
-"voorraadoverschot hebt. Controleer het prognosebericht voordat je opnieuw "
-"bestelt"
+"voorraadoverschot hebt. Controleer het voorspellingsrapport voordat je "
+"opnieuw bestelt"
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_move__procurement_values
@@ -3784,9 +3745,7 @@ msgstr ""
 #: model:ir.model.fields,help:stock.field_stock_quant__tracking
 #: model:ir.model.fields,help:stock.field_stock_scrap__tracking
 msgid "Ensure the traceability of a storable product in your warehouse."
-msgstr ""
-"Zorg voor de traceerbaarheid van een product dat kan worden opgeslagen in je "
-"magazijn."
+msgstr "Zorg voor de traceerbaarheid van een voorraadproduct in je magazijn."
 
 #. module: stock
 #. odoo-javascript
@@ -3806,7 +3765,7 @@ msgid ""
 "forecasted quantity for that period."
 msgstr ""
 "Schat het verkoopvolume voor de periode op basis van de afgelopen periode of "
-"bestel de verwachte hoeveelheid voor die periode."
+"bestel de voorspelde hoeveelheid voor die periode."
 
 #. module: stock
 #: model_terms:ir.actions.act_window,help:stock.action_location_form
@@ -3839,7 +3798,7 @@ msgstr "Foutmelding(en):"
 #. odoo-javascript
 #: code:addons/stock/static/src/widgets/forecast_widget.xml:0
 msgid "Exp"
-msgstr "Exp"
+msgstr "Verw"
 
 #. module: stock
 #. odoo-python
@@ -3956,22 +3915,22 @@ msgstr "Forceer verwijderingsstrategie"
 #: model:ir.model.fields,field_description:stock.field_stock_warehouse_orderpoint__qty_forecast
 #: model_terms:ir.ui.view,arch_db:stock.product_product_stock_tree
 msgid "Forecast"
-msgstr "Prognose"
+msgstr "Voorspelling"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_move__forecast_availability
 msgid "Forecast Availability"
-msgstr "Verwachte beschikbaarheid"
+msgstr "Voorspelde beschikbaarheid"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.view_warehouse_orderpoint_form
 msgid "Forecast Description"
-msgstr "Prognoseomschrijving"
+msgstr "Beschrijving van voorspelling"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.view_warehouse_orderpoint_tree_editable
 msgid "Forecast Report"
-msgstr "Prognoserapport"
+msgstr "Voorspellingsrapport"
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_product_product__virtual_available
@@ -3985,15 +3944,14 @@ msgid ""
 "Otherwise, this includes goods stored in any Stock Location with 'internal' "
 "type."
 msgstr ""
-"Verwachte hoeveelheid (berekend als hoeveelheid op voorraad – uitgaand + "
-"inkomend – hoeveelheid die verwijderd moet worden)\n"
-"In de context van één voorraadlocatie omvat dit de goederen die in deze "
-"locatie of in een van de onderliggende locaties zijn opgeslagen.\n"
-"In de context van één magazijn omvat dit de goederen die zijn opgeslagen in "
-"de voorraadlocatie van dat magazijn of in een van de onderliggende "
-"locaties.\n"
-"In andere gevallen omvat dit de goederen die zijn opgeslagen in alle "
-"voorraadlocaties van type ‘intern’."
+"Voorspelde hoeveelheid (berekend als Aanwezige voorraad - Uitgaande + "
+"Inkomende - Te verwijderen hoeveelheid)\n"
+"In een context met één voorraadlocatie omvat dit goederen opgeslagen in deze "
+"locatie of in een van de onderliggende locaties.\n"
+"In een context met één magazijn omvat dit goederen opgeslagen in de "
+"voorraadlocatie van dit magazijn of in een van de onderliggende locaties.\n"
+"Anders omvat dit goederen opgeslagen in elke voorraadlocatie van het type "
+"'intern'."
 
 #. module: stock
 #. odoo-javascript
@@ -4002,7 +3960,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_product_template_tree
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_product_tree
 msgid "Forecasted"
-msgstr "Verwacht"
+msgstr "Voorspeld"
 
 #. module: stock
 #. odoo-javascript
@@ -4024,7 +3982,7 @@ msgstr "Verwachte leveringsdatum"
 #. odoo-javascript
 #: code:addons/stock/static/src/stock_forecasted/forecasted_details.xml:0
 msgid "Forecasted Inventory"
-msgstr "Verwachte voorraad"
+msgstr "Voorspelde voorraad"
 
 #. module: stock
 #. odoo-python
@@ -4034,7 +3992,7 @@ msgstr "Verwachte voorraad"
 #: model:ir.model.fields,field_description:stock.field_product_template__virtual_available
 #: model:ir.model.fields,field_description:stock.field_stock_move__availability
 msgid "Forecasted Quantity"
-msgstr "Verwacht aantal"
+msgstr "Voorspelde aantal"
 
 #. module: stock
 #: model:ir.model.fields.selection,name:stock.selection__report_stock_quantity__state__in
@@ -4048,12 +4006,12 @@ msgstr "Verwachte ontvangsten"
 #: model:ir.actions.client,name:stock.stock_forecasted_product_product_action
 #: model:ir.actions.client,name:stock.stock_forecasted_product_template_action
 msgid "Forecasted Report"
-msgstr "Prognoserapport"
+msgstr "Voorspellingsrapport"
 
 #. module: stock
 #: model:ir.model.fields.selection,name:stock.selection__report_stock_quantity__state__forecast
 msgid "Forecasted Stock"
-msgstr "Verwachte voorraad"
+msgstr "Voorspelde voorraad"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_location__forecast_weight
@@ -4450,7 +4408,7 @@ msgstr ""
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_move_line__result_package_id
 msgid "If set, the operations are packed into this package"
-msgstr "Indien ingesteld worden de bewerkingen verpakt in deze verpakking"
+msgstr "Indien ingesteld worden de bewerkingen verpakt in dit pakket"
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_lot_label_layout__label_quantity
@@ -4518,8 +4476,8 @@ msgid ""
 "If this checkbox is ticked, Odoo will automatically print the package label "
 "when \"Put in Pack\" button is used."
 msgstr ""
-"Als dit selectievakje is aangevinkt, zal Odoo automatisch het "
-"verpakkingslabel afdrukken wanneer de knop \"Inpakken\" wordt gebruikt."
+"Als dit selectievakje is aangevinkt, zal Odoo automatisch het pakketlabel "
+"afdrukken wanneer de knop \"Inpakken\" wordt gebruikt."
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_picking_type__auto_print_packages
@@ -4527,8 +4485,8 @@ msgid ""
 "If this checkbox is ticked, Odoo will automatically print the packages and "
 "their contents of a picking when it is validated."
 msgstr ""
-"Als dit selectievakje is aangevinkt, zal Odoo automatisch de verpakkingen en "
-"de inhoud van een picking afdrukken wanneer deze gevalideerd is."
+"Als dit selectievakje is aangevinkt, zal Odoo automatisch de pakketten en de "
+"inhoud van een picking afdrukken wanneer deze gevalideerd is."
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_picking_type__auto_print_product_labels
@@ -4650,8 +4608,8 @@ msgid ""
 "If ticked, you will be able to select which package or package type to use "
 "in a put in pack"
 msgstr ""
-"Als deze optie is aangevinkt, kan je kiezen welke verpakking of welk "
-"verpakkingstype je wil gebruiken in een 'Verpakken'-bewerking"
+"Als deze optie is aangevinkt, kun je kiezen welk pakket of pakkettype je wil "
+"gebruiken in een 'Verpakken'-bewerking"
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_rule__active
@@ -5441,7 +5399,7 @@ msgstr "Levertijd:"
 #. module: stock
 #: model:product.removal,name:stock.removal_least_packages
 msgid "Least Packages"
-msgstr "Minste verpakkingen"
+msgstr "Minste pakketten"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_put_in_pack_form
@@ -5760,7 +5718,7 @@ msgstr "Beheer meerdere magazijnen"
 #. module: stock
 #: model:res.groups,name:stock.group_tracking_lot
 msgid "Manage Packages"
-msgstr "Beheer verpakkingen"
+msgstr "Beheer pakketten"
 
 #. module: stock
 #: model:res.groups,name:stock.group_adv_location
@@ -5943,7 +5901,7 @@ msgstr "Verplaatsingdetail"
 #: model:ir.model.fields,field_description:stock.field_stock_picking__picking_type_entire_packs
 #: model:ir.model.fields,field_description:stock.field_stock_picking_type__show_entire_packs
 msgid "Move Entire Packages"
-msgstr "Verplaats volledige verpakkingen"
+msgstr "Verplaats volledige pakketten"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_lot_label_layout__move_line_ids
@@ -6020,7 +5978,7 @@ msgstr "Veelvoud"
 #. module: stock
 #: model:ir.model.constraint,message:stock.constraint_stock_storage_category_capacity_unique_package_type
 msgid "Multiple capacity rules for one package type."
-msgstr "Meerdere capaciteitsregels voor één verpakkingssoort."
+msgstr "Meerdere capaciteitsregels voor één pakkettype."
 
 #. module: stock
 #: model:ir.model.constraint,message:stock.constraint_stock_storage_category_capacity_unique_product
@@ -6101,7 +6059,7 @@ msgstr "Aantal verplaatsingen uit"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_product_search_form_view
 msgid "Negative Forecasted Quantity"
-msgstr "Negatief verwacht aantal"
+msgstr "Negatief voorspeld aantal"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.quant_search_view
@@ -6215,7 +6173,7 @@ msgstr "Geen backorder"
 #. odoo-javascript
 #: code:addons/stock/static/src/widgets/stock_package_m2m.js:0
 msgid "No Package"
-msgstr "Geen verpakking"
+msgstr "Geen pakket"
 
 #. module: stock
 #: model_terms:ir.actions.act_window,help:stock.stock_quant_action
@@ -6461,7 +6419,9 @@ msgstr "Kantoorstoel"
 #: code:addons/stock/static/src/stock_forecasted/forecasted_header.xml:0
 #: model:ir.model.fields,field_description:stock.field_stock_quant__on_hand
 #: model:ir.model.fields,field_description:stock.field_stock_warehouse_orderpoint__qty_on_hand
+#: model_terms:ir.ui.view,arch_db:stock.product_form_view_procurement_button
 #: model_terms:ir.ui.view,arch_db:stock.product_product_stock_tree
+#: model_terms:ir.ui.view,arch_db:stock.product_template_form_view_procurement_button
 #: model_terms:ir.ui.view,arch_db:stock.search_product_lot_filter
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_product_template_tree
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_product_tree
@@ -6687,7 +6647,7 @@ msgstr "Originele verplaatsingen"
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_put_in_pack__origin_package_ids
 msgid "Origin Package"
-msgstr "Oorsprongsverpakking"
+msgstr "Oorsprongspakket"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_move__origin_returned_move_id
@@ -6864,84 +6824,84 @@ msgstr "Verpakking van 6"
 #: model_terms:ir.ui.view,arch_db:stock.view_picking_internal_search
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_package_history_list
 msgid "Package"
-msgstr "Verpakking"
+msgstr "Pakket"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_picking
 msgid "Package A"
-msgstr "Verpakking A"
+msgstr "Pakket A"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_picking
 msgid "Package B"
-msgstr "Verpakking B"
+msgstr "Pakket B"
 
 #. module: stock
 #: model:ir.actions.report,name:stock.action_report_package_barcode_small
 #: model:ir.actions.report,name:stock.action_report_package_history_barcode_small
 msgid "Package Barcode (PDF)"
-msgstr "Verpakkingsbarcode (PDF)"
+msgstr "Pakketbarcode (PDF)"
 
 #. module: stock
 #: model:ir.actions.report,name:stock.label_package_history_template
 #: model:ir.actions.report,name:stock.label_package_template
 msgid "Package Barcode (ZPL)"
-msgstr "Verpakkingsbarcode (ZPL)"
+msgstr "Pakketbarcode (ZPL)"
 
 #. module: stock
 #: model:ir.actions.report,name:stock.action_report_package_barcode
 #: model:ir.actions.report,name:stock.action_report_package_history_barcode
 msgid "Package Barcode with Contents"
-msgstr "Verpakkingsbarcode met inhoud"
+msgstr "Pakketbarcode met inhoud"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_storage_category__package_capacity_ids
 msgid "Package Capacity"
-msgstr "Verpakkingcapaciteit"
+msgstr "Pakketcapaciteit"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.view_picking_type_form
 msgid "Package Content"
-msgstr "Inhoud verpakking"
+msgstr "Inhoud pakket"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_move_line__package_history_id
 msgid "Package History"
-msgstr "Geschiedenis verpakking"
+msgstr "Geschiedenis pakket"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.view_picking_type_form
 msgid "Package Label"
-msgstr "Verpakkingslabel"
+msgstr "Pakketlabel"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_picking_type__package_label_to_print
 msgid "Package Label to Print"
-msgstr "Verpakkingslabel om af te drukken"
+msgstr "Pakketlabel om af te drukken"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_package_history__package_name
 #: model_terms:ir.ui.view,arch_db:stock.stock_package_view_list
 #: model_terms:ir.ui.view,arch_db:stock.stock_package_view_search
 msgid "Package Name"
-msgstr "Verpakkingsnaam"
+msgstr "Pakketnaam"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_package__dest_complete_name
 msgid "Package Name At Destination"
-msgstr "Verpakkingsnaam op bestemming"
+msgstr "Pakketnaam op bestemming"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_package__name
 #: model_terms:ir.ui.view,arch_db:stock.report_package_barcode
 #: model_terms:ir.ui.view,arch_db:stock.stock_package_view_form
 msgid "Package Reference"
-msgstr "Verpakkingsreferentie"
+msgstr "Pakketreferentie"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_package_view_form
 msgid "Package Transfers"
-msgstr "Verpakking overdrachten"
+msgstr "Pakketverplaatsingen"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_package__package_type_id
@@ -6956,12 +6916,12 @@ msgstr "Verpakking overdrachten"
 #: model_terms:ir.ui.view,arch_db:stock.stock_package_type_form
 #: model_terms:ir.ui.view,arch_db:stock.stock_package_view_search
 msgid "Package Type"
-msgstr "Verpakking soort"
+msgstr "Pakkettype"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_package_barcode_small
 msgid "Package Type Demo"
-msgstr "Verpakkingssoort Demo"
+msgstr "Pakkettype Demo"
 
 #. module: stock
 #. odoo-python
@@ -6972,35 +6932,35 @@ msgstr "Pakkettypereeks %(code)s"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.report_package_barcode_small
 msgid "Package Type:"
-msgstr "Verpakkingssoort:"
+msgstr "Pakkettype:"
 
 #. module: stock
 #: model:ir.actions.act_window,name:stock.action_package_type_view
 #: model:ir.ui.menu,name:stock.menu_packaging_types
 #: model_terms:ir.ui.view,arch_db:stock.stock_package_type_tree
 msgid "Package Types"
-msgstr "Verpakkingssoorten"
+msgstr "Pakkettypes"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_package_type__package_use
 msgid "Package Use"
-msgstr "Gebruik verpakking"
+msgstr "Gebruik pakket"
 
 #. module: stock
 #. odoo-python
 #: code:addons/stock/models/stock_package.py:0
 msgid "Package manually relocated"
-msgstr "Verpakking handmatig verplaatst"
+msgstr "Pakket handmatig verplaatst"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_package__valid_sscc
 msgid "Package name is valid SSCC"
-msgstr "Verpakkingsnaam is geldig SSCC"
+msgstr "Pakketnaam is geldig SSCC"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_putaway_list
 msgid "Package type"
-msgstr "Verpakkingssoort"
+msgstr "Pakkettype"
 
 #. module: stock
 #. odoo-python
@@ -7015,7 +6975,7 @@ msgstr "Verpakkingssoort"
 #: model_terms:ir.ui.view,arch_db:stock.view_picking_type_form
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_package_history_list
 msgid "Packages"
-msgstr "Verpakkingen"
+msgstr "Pakketten"
 
 #. module: stock
 #. odoo-python
@@ -7024,13 +6984,13 @@ msgid ""
 "Packages %(duplicate_names)s are moved to different locations while being in "
 "the same container %(container_name)s."
 msgstr ""
-"Verpakkingen %(duplicate_names)s worden verplaatst naar verschillende "
-"locaties terwijl ze in dezelfde container %(container_name)s zitten."
+"Pakketten %(duplicate_names)s worden verplaatst naar verschillende locaties "
+"terwijl ze in dezelfde container %(container_name)s zitten."
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_picking__packages_count
 msgid "Packages Count"
-msgstr "Aantal verpakkingen"
+msgstr "Aantal pakketten"
 
 #. module: stock
 #: model_terms:ir.actions.act_window,help:stock.action_package_view
@@ -7040,9 +7000,9 @@ msgid ""
 "                Once created, the whole package can be moved at once, or "
 "products can be unpacked and moved as single units again."
 msgstr ""
-"Verpakkingen worden meestal gemaakt via overdrachten (tijdens het verpakken) "
-"en kunnen verschillende producten bevatten.\n"
-"Eenmaal aangemaakt, kan de hele verpakking in één keer worden verplaatst, of "
+"Pakketten worden meestal gemaakt via overdrachten (tijdens het verpakken) en "
+"kunnen verschillende producten bevatten.\n"
+"Eenmaal aangemaakt, kan het hele pakket in één keer worden verplaatst, of "
 "kunnen producten worden uitgepakt en weer als afzonderlijke stuks worden "
 "verplaatst."
 
@@ -7846,7 +7806,7 @@ msgstr "Hoeveelheden uitgepakt"
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_move_line_kanban
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_move_line_operation_tree
 msgid "Quantity"
-msgstr "Aantal"
+msgstr "Hoeveelheid"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_product_product__qty_available
@@ -7916,13 +7876,12 @@ msgid ""
 "Otherwise, this includes goods arriving to any Stock Location with "
 "'internal' type."
 msgstr ""
-"Aantal producten die gepland zijn om het magazijn binnen te komen. \n"
-"Bij gebruik van een enkele voorraadlocatie, omvat dit de goederen die deze "
-"locatie binnenkomen, of één van de onderliggende locaties. \n"
-"Bij gebruik van een enkel magazijn, omvat dit de goederen die deze "
-"voorraadlocatie van dit magazijn binnenkomen, of één van de onderliggende "
-"locaties. \n"
-"Anders, omvat dit goederen die binnenkomen op alle voorraadlocaties van het "
+"Het aantal producten dat gepland staat om het magazijn binnen te komen. \n"
+"Bij gebruik van één voorraadlocatie omvat dit de goederen die deze locatie "
+"binnenkomen, of één van de onderliggende locaties. \n"
+"Bij gebruik van één magazijn omvat dit de goederen die deze voorraadlocatie "
+"van dit magazijn binnenkomen, of één van de onderliggende locaties. \n"
+"Anders omvat dit goederen die binnenkomen op alle voorraadlocaties van het "
 "type 'intern'."
 
 #. module: stock
@@ -7936,14 +7895,13 @@ msgid ""
 "Otherwise, this includes goods leaving any Stock Location with 'internal' "
 "type."
 msgstr ""
-"Aantal producten die gepland zijn om het magazijn te verlaten. \n"
-"Bij gebruik van een enkele voorraadlocatie, omvat dit de goederen die van "
-"deze locatie vertrekken, of één van de onderliggende locaties. \n"
-"Bij gebruik van een enkel magazijn, omvat dit de goederen die van de "
-"voorraadlocatie van dit magazijn vertrekken, of één van de onderliggende "
-"locaties. \n"
-"Anders, omvat dit goederen die vertrekken op alle voorraadlocaties van het "
-"type 'intern'."
+"Aantal geplande uitgaande producten.\n"
+"In een context met één voorraadlocatie omvat dit goederen die deze locatie "
+"of een van de onderliggende locaties verlaten.\n"
+"In een context met één magazijn omvat dit goederen die de voorraadlocatie "
+"van dit magazijn of een van de onderliggende locaties verlaten.\n"
+"Anders omvat dit goederen die een voorraadlocatie van het type 'intern' "
+"verlaten."
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_quant__quantity
@@ -8248,7 +8206,7 @@ msgid ""
 "the forecasted quantities"
 msgstr ""
 "Verwijder de handmatig ingevoerde waarde en vervang deze door het te "
-"bestellen aantal op basis van de verwachte aantallen"
+"bestellen aantal op basis van de voorspelde aantallen"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_product_product__reordering_max_qty
@@ -8626,7 +8584,7 @@ msgstr "Op dit product kunnen routes worden geselecteerd"
 #. module: stock
 #: model:ir.model.fields,help:stock.field_uom_uom__route_ids
 msgid "Routes propagated from the package type"
-msgstr "Routes die worden overgenomen van de verpakkingssoort"
+msgstr "Routes die worden overgenomen van het pakkettype"
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_warehouse__resupply_wh_ids
@@ -8738,11 +8696,15 @@ msgid "Sample data"
 msgstr "Voorbeeld data"
 
 #. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_stock_replenishment_info
+msgid "Save"
+msgstr "Opslaan"
+
+#. module: stock
 #. odoo-python
 #: code:addons/stock/models/product.py:0
 msgid "Save the product form before updating the Quantity On Hand."
-msgstr ""
-"Sla het productformulier op voordat je de hoeveelheid op voorraad bijwerkt."
+msgstr "Sla het productformulier op voordat je de Aanwezige voorraad bijwerkt."
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_quant__inventory_date
@@ -8865,7 +8827,7 @@ msgstr "Aanvulling zoeken"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_reference_search_view
 msgid "Search Reference"
-msgstr "Zoekreferentie"
+msgstr "Referentie zoeken"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_scrap_search_view
@@ -8885,7 +8847,7 @@ msgstr "Zoekopdracht niet ondersteund zonder waarde."
 #: code:addons/stock/static/src/views/list/stock_add_package_list_view.js:0
 #: code:addons/stock/static/src/views/picking_form/stock_move_one2many.js:0
 msgid "Select Packages to Move"
-msgstr "Selecteer verpakkingen om te verplaatsen"
+msgstr "Selecteer pakketten om te verplaatsen"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.replenishment_option_tree_view
@@ -8895,7 +8857,7 @@ msgstr "Selecteer route"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_put_in_pack_form
 msgid "Select a Package Type"
-msgstr "Selecteer een verpakkingstype"
+msgstr "Selecteer een pakkettype"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_location_route_form_view
@@ -9052,7 +9014,7 @@ msgstr "Reeks serie-/partijnummer"
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_picking_type__set_package_type
 msgid "Set Package Type"
-msgstr "Verpakkingstype instellen"
+msgstr "Pakkettype instellen"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.res_config_settings_view_form
@@ -9087,9 +9049,8 @@ msgstr ""
 "FEFO: producten/partijen met de dichtstbijzijnde verwijderdatum worden als "
 "eerste verplaatst (de beschikbaarheid van deze methode hangt af van de "
 "instelling 'Vervaldatums').\n"
-"Minst aantal verpakkingen: FIFO, maar met het kleinst mogelijke aantal "
-"verpakkingen als er meerdere verpakkingen zijn die hetzelfde product "
-"bevatten."
+"Minst aantal pakketten: FIFO, maar met het kleinst mogelijke aantal "
+"pakketten als er meerdere pakketten zijn die hetzelfde product bevatten."
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.res_config_settings_view_form
@@ -9116,7 +9077,7 @@ msgstr "Instellen op 0"
 #. module: stock
 #: model:ir.actions.server,name:stock.action_view_set_quants_tree
 msgid "Set to quantity on hand"
-msgstr "Instellen op beschikbare aantal"
+msgstr "Instellen op aanwezige voorraad"
 
 #. module: stock
 #: model:ir.actions.act_window,name:stock.action_stock_config_settings
@@ -9212,7 +9173,7 @@ msgstr "Verwachte hoeveelheid weergeven"
 #: model:ir.model.fields,field_description:stock.field_product_product__show_forecasted_qty_status_button
 #: model:ir.model.fields,field_description:stock.field_product_template__show_forecasted_qty_status_button
 msgid "Show Forecasted Qty Status Button"
-msgstr "Knop voor verwachte hoeveelheid weergeven"
+msgstr "Knop voor status van voorspelde aantal weergeven"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_picking__show_lots_text
@@ -9407,12 +9368,12 @@ msgstr "Naam van bron"
 #: model_terms:ir.ui.view,arch_db:stock.stock_move_line_view_search
 #: model_terms:ir.ui.view,arch_db:stock.view_move_line_form
 msgid "Source Package"
-msgstr "Bronverpakking"
+msgstr "Bronpakket"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.message_body
 msgid "Source Package:"
-msgstr "Bronverpakking:"
+msgstr "Bronpakket:"
 
 #. module: stock
 #: model:ir.actions.server,name:stock.stock_split_picking
@@ -9532,12 +9493,12 @@ msgstr "Voorraadbewerking"
 #. module: stock
 #: model:ir.model,name:stock.model_stock_package_destination
 msgid "Stock Package Destination"
-msgstr "Voorraadverpakking bestemming"
+msgstr "Pakketbestemming"
 
 #. module: stock
 #: model:ir.model,name:stock.model_stock_package_history
 msgid "Stock Package History"
-msgstr "Geschiedenis voorraadverpakkingen"
+msgstr "Voorraad pakketgeschiedenis"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_product_product__stock_quant_ids
@@ -9642,7 +9603,7 @@ msgstr "Voorraadverplaatsingen welke zijn verwerkt"
 #. module: stock
 #: model:ir.model,name:stock.model_stock_package_type
 msgid "Stock package type"
-msgstr "Verpakkingssoort"
+msgstr "Pakkettype"
 
 #. module: stock
 #: model:ir.model,name:stock.model_report_stock_report_stock_rule
@@ -9973,7 +9934,7 @@ msgstr "De volgende aanvulopdracht is gegenereerd"
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.view_product_replenish
 msgid "The forecasted quantity of"
-msgstr "Het verwachte aantal van"
+msgstr "Het voorspelde aantal van"
 
 #. module: stock
 #. odoo-python
@@ -10053,7 +10014,7 @@ msgstr "De bewerkingen leveren producten aan deze locatie"
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_quant__package_id
 msgid "The package containing this quant"
-msgstr "De verpakking dat deze hoeveelheid bevat"
+msgstr "Het pakket dat deze hoeveelheid bevat"
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_location__location_id
@@ -10091,7 +10052,7 @@ msgid ""
 "a common location."
 msgstr ""
 "De geselecteerde hoeveelheden behoren niet allemaal tot dezelfde locatie.\n"
-"                    Je mag hen geen verpakking toewijzen zonder ze naar een "
+"                    Je mag hen geen pakket toewijzen zonder ze naar een "
 "gemeenschappelijke locatie te verplaatsen."
 
 #. module: stock
@@ -10349,8 +10310,8 @@ msgstr ""
 #: code:addons/stock/models/stock_package.py:0
 msgid "This package is currently set to be sent in %(location_names_list)s."
 msgstr ""
-"Momenteel is ingesteld dat deze verpakking in %(location_names_list)s "
-"verzonden wordt."
+"Momenteel is ingesteld dat dit pakket in %(location_names_list)s verzonden "
+"wordt."
 
 #. module: stock
 #. odoo-python
@@ -10360,7 +10321,7 @@ msgid ""
 "advised to change the Product Type since it can lead to inconsistencies. A "
 "better solution could be to archive the product and create a new one instead."
 msgstr ""
-"Dit product is in minstens één voorraadverplaatsing gebruikt. Het wordt niet "
+"Dit product is in minstens één voorraadmutatie gebruikt. Het wordt niet "
 "aangeraden om het producttype te wijzigen, aangezien dit tot inconsistenties "
 "kan leiden. Een betere oplossing zou kunnen zijn om het product te "
 "archiveren en in plaats daarvan een nieuw product te maken."
@@ -10597,7 +10558,7 @@ msgstr "Totale vraag"
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_product_template_tree
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_product_tree
 msgid "Total Forecasted"
-msgstr "Totaal verwacht"
+msgstr "Totaal voorspeld"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.product_product_stock_tree
@@ -10615,7 +10576,7 @@ msgstr "Totaal inkomend"
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_product_tree
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_quant_tree_editable
 msgid "Total On Hand"
-msgstr "Totaal beschikbaar"
+msgstr "Totaal aanwezig"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.product_product_stock_tree
@@ -10644,15 +10605,15 @@ msgid ""
 "shipping weight specified will default to their products' total weight. This "
 "is the weight used to compute the cost of the shipping."
 msgstr ""
-"Totaalgewicht van de verpakkingen en producten die niet in een verpakking "
-"zitten. Verpakking zonder opgegeven verzendgewicht worden standaard "
-"ingesteld op het totale gewicht van hun producten. Dit is het gewicht dat "
-"wordt gebruikt om de verzendkosten te berekenen."
+"Totaalgewicht van de pakketten en producten die niet in een pakket zitten. "
+"Pakketten zonder opgegeven verzendgewicht worden standaard ingesteld op het "
+"totale gewicht van hun producten. Dit is het gewicht dat wordt gebruikt om "
+"de verzendkosten te berekenen."
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_picking__weight_bulk
 msgid "Total weight of products which are not in a package."
-msgstr "Totaalgewicht van producten die niet in een verpakking zitten."
+msgstr "Totaalgewicht van producten die niet in een pakket zitten."
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_package__shipping_weight
@@ -10715,9 +10676,7 @@ msgstr "Beheer productlocaties in je magazijn"
 #. module: stock
 #: model_terms:ir.actions.act_window,help:stock.product_template_action_product
 msgid "Track your stock quantities by creating storable products."
-msgstr ""
-"Houd je voorraadhoeveelheden bij door producten te maken die kunnen worden "
-"opgeslagen."
+msgstr "Houd je voorraadhoeveelheden bij door voorraadproducten te maken."
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.product_template_search_view_inherit_stock
@@ -10764,7 +10723,7 @@ msgstr ""
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_picking__package_history_ids
 msgid "Transfered Packages"
-msgstr "Verplaatste verpakkingen"
+msgstr "Verplaatste pakketten"
 
 #. module: stock
 #. odoo-python
@@ -10799,8 +10758,7 @@ msgstr ""
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_package__picking_ids
 msgid "Transfers in which the Package is set as Destination Package"
-msgstr ""
-"Verplaatsingen waarbij de verpakking is ingesteld als bestemmingsverpakking"
+msgstr "Verplaatsingen waarbij het pakket is ingesteld als bestemmingspakket"
 
 #. module: stock
 #: model:ir.model.fields.selection,name:stock.selection__stock_location__usage__transit
@@ -11100,6 +11058,7 @@ msgstr "Leverancierslocaties"
 
 #. module: stock
 #: model_terms:ir.ui.view,arch_db:stock.stock_picking_type_kanban
+#: model_terms:ir.ui.view,arch_db:stock.view_stock_package_history_list
 msgid "View"
 msgstr "Weergave"
 
@@ -11352,7 +11311,7 @@ msgstr "Gewicht voor levering"
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_package_type__base_weight
 msgid "Weight of the package type"
-msgstr "Gewicht van het verpakkingsssoort"
+msgstr "Gewicht van het pakkettype"
 
 #. module: stock
 #: model:ir.model.fields,field_description:stock.field_stock_storage_category__weight_uom_name
@@ -11403,7 +11362,7 @@ msgstr ""
 msgid "When checked, the route will be selectable on package types"
 msgstr ""
 "Als deze optie is aangevinkt, kan de route worden geselecteerd voor "
-"verpakkingssoorten"
+"pakkettypes"
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_route__product_categ_selectable
@@ -11463,7 +11422,7 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:stock.view_stock_replenishment_info
 msgid "When the stock level at the forecasted date is below the minimum ("
 msgstr ""
-"Wanneer het voorraadniveau op de verwachte datum onder het minimum ligt ("
+"Wanneer het voorraadniveau op de voorspelde datum onder het minimum ligt ("
 
 #. module: stock
 #: model:ir.model.fields,help:stock.field_stock_rule__propagate_carrier
@@ -11554,9 +11513,9 @@ msgid ""
 "                    Those quantities will be removed from the following "
 "package(s):"
 msgstr ""
-"Je staat op het punt hoeveelheden in een verpakking te verplaatsen zonder "
-"het volledige verpakking te verplaatsen.\n"
-"                    Deze hoeveelheden worden uit de volgende verpakking(en) "
+"Je staat op het punt hoeveelheden in een pakket te verplaatsen zonder het "
+"volledige pakket te verplaatsen.\n"
+"                    Deze hoeveelheden worden uit de volgende pakketten "
 "verwijderd:"
 
 #. module: stock
@@ -11603,8 +11562,8 @@ msgid ""
 "You are trying to put products going to different locations into the same "
 "package"
 msgstr ""
-"Je probeert producten welke naar verschillende locaties gaan te stoppen in "
-"dezelfde verpakking"
+"Je probeert producten die naar verschillende locaties gaan in hetzelfde "
+"pakket te steken"
 
 #. module: stock
 #: model_terms:ir.actions.act_window,help:stock.action_routes_form
@@ -11800,8 +11759,8 @@ msgid ""
 "You cannot move the same package content more than once in the same transfer "
 "or split the same package into two location."
 msgstr ""
-"Je kunt niet dezelfde verpakkingsinhoud meer dan één keer in dezelfde "
-"verplaatsing overbrengen of dezelfde verpakking op twee locaties splitsen."
+"Je kunt niet dezelfde pakketinhoud meer dan één keer in dezelfde "
+"verplaatsing overbrengen of hetzelfde pakket over twee locaties splitsen."
 
 #. module: stock
 #. odoo-python
@@ -11920,7 +11879,7 @@ msgstr "Je kunt maar één picking tegelijk retourneren."
 #. odoo-python
 #: code:addons/stock/models/stock_move.py:0
 msgid "You need a transfer to add these packages to."
-msgstr "Je hebt een verplaatsing nodig om deze verpakkingen aan toe te voegen."
+msgstr "Je hebt een verplaatsing nodig om deze pakketten aan toe te voegen."
 
 #. module: stock
 #. odoo-python
@@ -12373,11 +12332,46 @@ msgid "units"
 msgstr "eenheden"
 
 #. module: stock
+#: model_terms:ir.ui.view,arch_db:stock.view_stock_replenishment_info
+msgid "x"
+msgstr "x"
+
+#. module: stock
 #: model:mail.template,subject:stock.mail_template_data_delivery_confirmation
 msgid ""
 "{{ object.company_id.name }} Delivery Order (Ref {{ object.name or 'n/a' }})"
 msgstr ""
 "{{ object.company_id.name }} Leveringsorder (Ref {{ object.name or 'nvt' }})"
+
+#~ msgid "1.00"
+#~ msgstr "1.00"
+
+#~ msgid "12.0"
+#~ msgstr "12.0"
+
+#~ msgid "1234567890"
+#~ msgstr "1234567890"
+
+#~ msgid "12345678901"
+#~ msgstr "12345678901"
+
+#~ msgid "2021-09-01"
+#~ msgstr "2021-09-01"
+
+#~ msgid "2023-01-01"
+#~ msgstr "01-01-2023"
+
+#~ msgid "2023-09-24"
+#~ msgstr "2023-09-24"
+
+#~ msgid "3.00"
+#~ msgstr "3.00"
+
+#~ msgid "54326786758"
+#~ msgstr "54326786758"
+
+#~ msgid "<span groups=\"!uom.group_uom\">On Hand</span>"
+#~ msgstr "<span groups=\"!uom.group_uom\">Aanwezige voorraad</span>"
 
 #~ msgid "<strong>Customer Address</strong>"
 #~ msgstr "<strong>Klant Adres</strong>"

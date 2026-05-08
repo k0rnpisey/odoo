@@ -1,8 +1,15 @@
-import { beforeEach, describe, expect, test } from "@odoo/hoot";
-import { manuallyDispatchProgrammaticEvent, microTick, press } from "@odoo/hoot-dom";
-import { animationFrame, tick } from "@odoo/hoot-mock";
-import { patchWithCleanup } from "@web/../tests/web_test_helpers";
-import { browser } from "@web/core/browser/browser";
+import {
+    animationFrame,
+    beforeEach,
+    describe,
+    expect,
+    manuallyDispatchProgrammaticEvent,
+    microTick,
+    mockUserAgent,
+    press,
+    test,
+    tick,
+} from "@odoo/hoot";
 import { setupEditor, testEditor } from "../_helpers/editor";
 import { unformat } from "../_helpers/format";
 import { getContent, setSelection } from "../_helpers/selection";
@@ -414,21 +421,30 @@ describe("Selection collapsed", () => {
 
         test("should unwrap a block next to an inline unbreakable element", async () => {
             await testEditor({
-                contentBefore: `<div><p>abc</p><div class="o_image"></div><p>[]def</p></div>`,
+                contentBefore: `<div><p>abc</p><span class="oe_unbreakable"></span><p>[]def</p></div>`,
                 stepFunction: async (editor) => {
                     deleteBackward(editor);
                 },
-                contentAfter: `<div><p>abc</p><div class="o_image"></div>[]def</div>`,
+                // After the deleteBackward, the automatic normalization of
+                // setSelection puts the cursor at the deepest position, that is
+                // in the span, rather than after it. While it might look a bit
+                // weird in this case, it makes more sense if one imagine that
+                // it is a style tag like bold or italic.
+                contentAfter: `<div><p>abc</p><span class="oe_unbreakable">[]</span>def</div>`,
             });
         });
 
         test("should remove an inline unbreakable contenteditable='false' sibling element", async () => {
             await testEditor({
-                contentBefore: `<div><p>abc</p><div class="o_image"></div>[]def</div>`,
+                contentBefore: `<div><p>abc</p><span class="oe_unbreakable" contenteditable="false">d</span>[]efg</div>`,
+                contentBeforeEdit:
+                    '<p data-selection-placeholder=""><br></p>' +
+                    `<div><p>abc</p><span class="oe_unbreakable" contenteditable="false">d</span>[]efg</div>` +
+                    '<p data-selection-placeholder=""><br></p>',
                 stepFunction: async (editor) => {
                     deleteBackward(editor);
                 },
-                contentAfter: `<div><p>abc</p>[]def</div>`,
+                contentAfter: `<div><p>abc</p>[]efg</div>`,
             });
         });
 
@@ -502,16 +518,16 @@ describe("Selection collapsed", () => {
 
         test("should merge paragraph with previous one containing a media element", async () => {
             await testEditor({
-                contentBefore: `<p>abc</p><p style="margin-bottom: 0px;"><o-image class="o_image" contenteditable="false"></o-image></p><p>[]def</p>`,
+                contentBefore: `<p>abc</p><p style="margin-bottom: 0px;"><span class="o_file_box" contenteditable="false"><a href="#" title="document" data-mimetype="application/pdf"></a></span></p><p>[]def</p>`,
                 stepFunction: deleteBackward,
-                contentAfterEdit: `<p>abc</p><p style="margin-bottom: 0px;"><o-image class="o_image" contenteditable="false"></o-image>[]def</p>`,
-                contentAfter: `<p>abc</p><p style="margin-bottom: 0px;"><o-image class="o_image"></o-image>[]def</p>`,
+                contentAfterEdit: `<p>abc</p><p style="margin-bottom: 0px;">\ufeff<span class="o_file_box" contenteditable="false"><a href="#" title="document" data-mimetype="application/pdf"></a></span>\ufeff[]def</p>`,
+                contentAfter: `<p>abc</p><p style="margin-bottom: 0px;"><span class="o_file_box"><a href="#" title="document" data-mimetype="application/pdf"></a></span>[]def</p>`,
             });
         });
 
         test("should remove a media element inside a p", async () => {
             await testEditor({
-                contentBefore: `<p>abc</p><p style="margin-bottom: 0px;"><o-image class="o_image" contenteditable="false"></o-image>[]def</p>`,
+                contentBefore: `<p>abc</p><p style="margin-bottom: 0px;"><span class="fa fa-icon" contenteditable="false"></span>[]def</p>`,
                 stepFunction: deleteBackward,
                 contentAfter: `<p>abc</p><p style="margin-bottom: 0px;">[]def</p>`,
             });
@@ -519,7 +535,7 @@ describe("Selection collapsed", () => {
 
         test("should remove a link to uploaded document", async () => {
             await testEditor({
-                contentBefore: `<p>abc<a href="#" title="document" data-mimetype="application/pdf" class="o_image" contenteditable="false"></a>[]</p>`,
+                contentBefore: `<p>abc<span class="o_file_box" contenteditable="false"><a href="#" title="document" data-mimetype="application/pdf"></a></span>[]</p>`,
                 stepFunction: deleteBackward,
                 contentAfter: `<p>abc[]</p>`,
             });
@@ -527,7 +543,7 @@ describe("Selection collapsed", () => {
 
         test("should remove a link to uploaded document at the beginning of the editable", async () => {
             await testEditor({
-                contentBefore: `<p><a href="#" title="document" data-mimetype="application/pdf" class="o_image" contenteditable="false"></a>[]</p>`,
+                contentBefore: `<p><span class="o_file_box" contenteditable="false"><a href="#" title="document" data-mimetype="application/pdf"></a></span>[]</p>`,
                 stepFunction: deleteBackward,
                 contentAfter: `<p>[]<br></p>`,
             });
@@ -2087,7 +2103,7 @@ describe("Selection not collapsed", () => {
             stepFunction: deleteBackward,
             contentAfter: unformat(
                 `<table><tbody>
-                    <tr><td>[]ef</td><td>gh</td></tr>
+                    <tr><td>ef[]</td><td>gh</td></tr>
                 </tbody></table>`
             ),
         });
@@ -2104,7 +2120,7 @@ describe("Selection not collapsed", () => {
             stepFunction: deleteBackward,
             contentAfter: unformat(
                 `<table><tbody>
-                    <tr><td>[]cd</td></tr>
+                    <tr><td>cd[]</td></tr>
                     <tr><td>gh</td></tr>
                 </tbody></table>`
             ),
@@ -2277,6 +2293,14 @@ describe("Selection not collapsed", () => {
             stepFunction: deleteBackward,
             contentAfter: `<div><br></div><div>[]<br></div>`,
             config: { baseContainers: ["DIV"] },
+        });
+    });
+
+    test("should not remove blockquote when it contains content on Backspace", async () => {
+        await testEditor({
+            contentBefore: `<blockquote><img>[]</blockquote>`,
+            stepFunction: deleteBackward,
+            contentAfter: `<blockquote>[]<br></blockquote>`,
         });
     });
 
@@ -2476,12 +2500,7 @@ describe("Selection not collapsed", () => {
     });
 
     describe("Android Chrome", () => {
-        beforeEach(() => {
-            patchWithCleanup(browser.navigator, {
-                userAgent:
-                    "Mozilla/5.0 (Linux; Android 10; Pixel 3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36",
-            });
-        });
+        beforeEach(() => mockUserAgent("android"));
 
         // This simulates the sequence of events that happens in Android Chrome
         // when pressing backspace. Some random stuff might happen, and

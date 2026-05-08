@@ -579,7 +579,7 @@ async function mail_link_preview(request) {
     const { message_id } = await parseRequestParams(request);
     const [message] = MailMessage.search_read([["id", "=", message_id]]);
     const link = createDocumentFragmentFromContent(markup(message.body)).querySelector(
-        "a[href^='https://tenor.com'], a[href='https://make-link-preview.com']"
+        "a[href^='https://tenor.com'], a[href^='https://make-link-preview.com']"
     );
     if (link) {
         const isGifPreview = link.href.startsWith("https://tenor.com");
@@ -1120,7 +1120,11 @@ function _process_request_for_all(store, name, params, context = {}) {
         });
     }
     if (name === "/discuss/create_group") {
-        const channelId = DiscussChannel._create_group(params.partners_to, params.name);
+        const channelId = DiscussChannel._create_group(
+            params.partners_to,
+            params.default_display_mode,
+            params.name
+        );
         store.add(channelId).resolve_data_request({
             channel: mailDataHelpers.Store.one(channelId, makeKwArgs({ only_id: true })),
         });

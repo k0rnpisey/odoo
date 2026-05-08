@@ -93,14 +93,14 @@ class ProductTemplate(models.Model):
     # list_price: catalog price, user defined
     list_price = fields.Float(
         'Sales Price', default=1.0,
-        digits='Product Price',
+        min_display_digits='Product Price',
         tracking=True,
         help="Price at which the product is sold to customers.",
     )
     standard_price = fields.Float(
         'Cost', compute='_compute_standard_price',
         inverse='_set_standard_price', search='_search_standard_price',
-        digits='Product Price', groups="base.group_user",
+        min_display_digits='Product Price', groups="base.group_user",
         help="""Value of the product (automatically computed in AVCO).
         Used to value the product when the purchase cost is not known (e.g. inventory adjustment).
         Used to compute margins on sale orders.""")
@@ -134,6 +134,12 @@ class ProductTemplate(models.Model):
 
     valid_product_template_attribute_line_ids = fields.Many2many('product.template.attribute.line',
         compute="_compute_valid_product_template_attribute_line_ids", string='Valid Product Attribute Lines')
+
+    import_attribute_values = fields.Char(
+        string='Product Values',
+        compute='_compute_import_attribute_values',
+        inverse='_inverse_import_attribute_values',
+        store=False, copy=False)
 
     product_variant_ids = fields.One2many('product.product', 'product_tmpl_id', 'Products', required=True)
     # performance: product_variant_id provides prefetching on the first product variant only
@@ -504,6 +510,60 @@ class ProductTemplate(models.Model):
         """ Return a list of fields present on template and variants models and that are related"""
         return ['barcode', 'default_code', 'standard_price', 'volume', 'weight', 'product_properties']
 
+    def _compute_import_attribute_values(self):
+        self.import_attribute_values = ''
+
+    def _inverse_import_attribute_values(self):
+        raise ValueError('This field can only be used to import products.')
+
+    @api.model
+    def load(self, fields, data):
+        """
+        Data import for products depends on the presence of variants.
+        If 'import_attribute_values' is present, then the product.template files
+        will be created, followed by the product.product files. Everything is
+        done from the same file.
+
+        The required fields are always imported; however, other fields are
+        imported when the product.product files are created.
+        """
+        if 'import_attribute_values' not in fields:
+            return super().load(fields, data)
+
+        column_no = fields.index('import_attribute_values')
+
+        data_list_products = []
+        data_list_templates = []
+        for values in data:
+            if values[column_no].strip():
+                data_list_products.append(values)
+            else:
+                values = list(values)
+                values.pop(column_no)
+                data_list_templates.append(values)
+
+        if data_list_templates:
+            template_fields = list(fields)
+            template_fields.pop(column_no)
+            result = super().load(template_fields, data_list_templates)
+            if any(message['type'] == 'error' for message in result['messages']):
+                return result
+        else:
+            result = {'ids': [], 'messages': [], 'nextrow': 0}
+
+        if data_list_products:
+            ProductProduct = self.env['product.product'].with_context(from_template_import=True)
+            result_product = ProductProduct.load(fields, data_list_products)
+            if any(message['type'] == 'error' for message in result_product['messages']):
+                return result_product
+
+            product_templates = ProductProduct.browse(result_product['ids']).product_tmpl_id
+            result['ids'].extend(product_templates.ids)
+            result['messages'].extend(result_product['messages'])
+            result['nextrow'] = result.get('nextrow', 0) + result_product.get('nextrow', 0)
+
+        return result
+
     @api.model_create_multi
     def create(self, vals_list):
         ''' Store the initial standard price in order to be able to retrieve the cost of a product template for a given date'''
@@ -639,7 +699,7 @@ class ProductTemplate(models.Model):
                     %s
                 </p>
                 <p>
-                    <a class="oe_link" href="https://www.odoo.com/documentation/latest/_downloads/c2c6ce32294dfddffcfefcf2775f7a09/pdfquotebuilderexamples.zip">
+                    <a class="oe_link" href="https://www.odoo.com/documentation/latest/_downloads/eaa2883bd361273b475c9765f64e3e0c/pdfquotebuilderexamples.zip">
                     %s
                     </a>
                 </p>
@@ -784,7 +844,8 @@ class ProductTemplate(models.Model):
             variants_to_unlink += all_variants - current_variants_to_activate
 
         if variants_to_activate:
-            variants_to_activate.write({'active': True})
+            # Only activate variants whose template is active
+            variants_to_activate.filtered(lambda v: v.product_tmpl_id.active).write({'active': True})
         if variants_to_create:
             Product.create(variants_to_create)
         if variants_to_unlink:
@@ -936,17 +997,38 @@ class ProductTemplate(models.Model):
         """
         self.ensure_one()
         product_template_attribute_values = self.valid_product_template_attribute_line_ids.product_template_value_ids
-        return {
-            ptav.id: [
-                value.id
-                for filter_line in ptav.exclude_for.filtered(
-                    lambda filter_line: filter_line.product_tmpl_id == self
-                ) for value in filter_line.value_ids if value.ptav_active
-            ]
-            for ptav in product_template_attribute_values if (
-                ptav.ptav_active or combination_ids and ptav.id in combination_ids
-            )
-        }
+        result = {}
+
+        domain_ptav = [('ptav_active', '=', True)]
+
+        if combination_ids:
+            domain_ptav = Domain.OR([
+                domain_ptav,
+                [('id', 'in', combination_ids)]
+            ])
+
+        domain_ptav = Domain.AND([
+            domain_ptav,
+            [('id', 'in', product_template_attribute_values.ids)],
+        ])
+
+        exclusion_ids_by_ptav = dict(self.env['product.template.attribute.exclusion']._read_group(
+            domain=[
+                ('product_template_attribute_value_id', 'any', domain_ptav),
+                ('product_tmpl_id', '=', self.id),
+            ],
+            groupby=['product_template_attribute_value_id'],
+            aggregates=['id:recordset'],
+        ))
+
+        for ptav in product_template_attribute_values:
+            if ptav.ptav_active or combination_ids and ptav.id in combination_ids:
+                if exclusions := exclusion_ids_by_ptav.get(ptav):
+                    result[ptav.id] = exclusions.value_ids.filtered(lambda x: x.ptav_active).ids
+                else:
+                    result[ptav.id] = []
+
+        return result
 
     def _get_parent_attribute_exclusions(self, parent_combination):
         """Get exclusions coming from the parent combination.
@@ -1231,6 +1313,11 @@ class ProductTemplate(models.Model):
         if not product_template_attribute_values_per_line:
             return
 
+        product_template_attribute_values_per_line = [ptav for ptav in product_template_attribute_values_per_line if len(ptav)]
+        if not product_template_attribute_values_per_line:
+            yield self.env['product.template.attribute.value']
+            return
+
         all_exclusions = {self.env['product.template.attribute.value'].browse(k):
                           self.env['product.template.attribute.value'].browse(v) for k, v in
                           self._get_own_attribute_exclusions().items()}
@@ -1441,7 +1528,7 @@ class ProductTemplate(models.Model):
     def get_import_templates(self):
         return [{
             'label': _('Import Template for Products'),
-            'template': '/product/static/xls/product_template.xls'
+            'template': '/product/static/xls/product_product.xls'
         }]
 
     def get_contextual_price(self, product=None):

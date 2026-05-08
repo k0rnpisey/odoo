@@ -9,6 +9,7 @@ import { useTrackedAsync } from "@point_of_sale/app/hooks/hooks";
 import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/order_receipt";
 import { CancelPopup } from "@pos_self_order/app/components/cancel_popup/cancel_popup";
 import { _t } from "@web/core/l10n/translation";
+import { formatProductName } from "../../utils";
 
 export class CartPage extends Component {
     static template = "pos_self_order.CartPage";
@@ -48,6 +49,15 @@ export class CartPage extends Component {
                 : this.selfOrder.currentOrder.lines) || [];
 
         return lines.filter((line) => !line.combo_parent_id);
+    }
+
+    get totalPriceAndTax() {
+        const { amountTaxes, priceIncl } = this.selfOrder.currentOrder;
+        const { priceWithTax, tax, count } = this.selfOrder.orderLineNotSend;
+        return {
+            priceWithTax: count > 0 ? priceWithTax : priceIncl,
+            tax: count > 0 ? tax : amountTaxes,
+        };
     }
 
     get optionalProducts() {
@@ -90,7 +100,22 @@ export class CartPage extends Component {
             return;
         }
 
-        if (!this.selfOrder.currentOrder.presetRequirementsFilled && orderingMode !== "table") {
+        const order = this.selfOrder.currentOrder;
+        const partner = order.partner_id || {};
+        const time = order.preset_time ? order.preset_time.toSQL() : null;
+        const isValidRequiredInfo = this.selfOrder.isValidSelection(time, {
+            id: parseInt(partner.id),
+            name: partner.name || order.floating_order_name,
+            email: partner.email || order.email,
+            phone: partner.phone || order.mobile,
+            street: partner.street,
+            city: partner.city,
+            country_id: partner.country_id,
+            state_id: partner.state_id,
+            zip: partner.zip,
+        });
+
+        if (!isValidRequiredInfo && orderingMode !== "table") {
             this.state.fillInformations = true;
             return;
         }
@@ -115,6 +140,8 @@ export class CartPage extends Component {
     async proceedInfos(state) {
         this.state.fillInformations = false;
         if (state) {
+            this.selfOrder.currentOrder.mobile =
+                this.selfOrder.currentOrder.partner_id?.phone || state.phone;
             this.selfOrder.currentOrder.email =
                 this.selfOrder.currentOrder.partner_id?.email || state.email;
             await this.pay();
@@ -160,7 +187,6 @@ export class CartPage extends Component {
     selectTable(table) {
         if (table) {
             this.selectTableDependingOnMode(table);
-            this.selfOrder.currentTable = table;
             this.router.addTableIdentifier(table);
             this.pay();
         }
@@ -253,6 +279,10 @@ export class CartPage extends Component {
     }
     get displayTaxes() {
         return !this.selfOrder.isTaxesIncludedInPrice();
+    }
+
+    formatProductName(product) {
+        return formatProductName(product);
     }
 
     /*

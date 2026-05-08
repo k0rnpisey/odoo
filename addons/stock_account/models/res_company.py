@@ -86,7 +86,7 @@ class ResCompany(models.Model):
         self.ensure_one()
         value_by_account: dict = defaultdict(float)
         if not accounts_by_product:
-            accounts_by_product = self._get_accounts_by_product()
+            accounts_by_product = self.with_context(prefetch_fields=False)._get_accounts_by_product()
         for product, accounts in accounts_by_product.items():
             account = accounts['valuation']
             product_value = product.with_context(to_date=at_date).total_value
@@ -141,9 +141,12 @@ class ResCompany(models.Model):
         for company in companies:
             company.action_close_stock_valuation(auto_post=True)
 
+    def _get_valuation_product_domain(self):
+        return [('is_storable', '=', True)]
+
     def _get_accounts_by_product(self, products=None):
         if not products:
-            products = self.env['product.product'].with_company(self).search([('is_storable', '=', True)])
+            products = self.env['product.product'].with_company(self).search(self._get_valuation_product_domain())
 
         accounts_by_product = {}
         for product in products:
@@ -229,14 +232,17 @@ class ResCompany(models.Model):
 
         extra_balance = self._get_extra_balance(extra_aml_vals_list)
 
-        inventory_data = self.stock_value(accounts_by_product, at_date)
+        if 'inventory_data' in self.env.context:
+            inventory_data = self.env.context.get('inventory_data')
+        else:
+            inventory_data = self.stock_value(accounts_by_product, at_date)
         accounting_data = self.stock_accounting_value(accounts_by_product, at_date)
 
         accounts = inventory_data.keys() | accounting_data.keys()
         for account in accounts:
             account_variation = account.account_stock_variation_id
             if not account_variation:
-                account_variation = self.env.company.expense_account_id
+                account_variation = self.expense_account_id
             if not account_variation:
                 continue
             balance = inventory_data.get(account, 0) - accounting_data.get(account, 0)
@@ -335,9 +341,12 @@ class ResCompany(models.Model):
             closing = self.env['account.move'].browse(closing_id).exists().filtered(lambda am: am.state == 'posted')
         if not closing:
             return False
-        am_state_field = self.env['ir.model.fields'].search([('model', '=', 'account.move'), ('name', '=', 'state')], limit=1)
-        state_tracking = closing.message_ids.tracking_value_ids.filtered(lambda t: t.field_id == am_state_field).sorted('id')
-        return state_tracking[-1:].create_date or fields.Datetime.to_datetime(closing.date)
+        am_state_field = self.env['ir.model.fields'].sudo().search([('model', '=', 'account.move'), ('name', '=', 'state')], limit=1)
+        state_tracking = closing.message_ids.sudo().tracking_value_ids.filtered(lambda t: t.field_id == am_state_field).sorted('id')
+        create_date = state_tracking[-1:].create_date
+        if create_date and create_date.date() == closing.date:
+            return create_date
+        return fields.Datetime.to_datetime(closing.date)
 
     def _save_closing_id(self, move_id):
         self.ensure_one()

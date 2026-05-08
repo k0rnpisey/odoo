@@ -4,7 +4,6 @@ import psycopg2
 import unittest
 from collections import abc
 from unittest.mock import patch
-
 import babel.dates
 
 from odoo.addons.base.tests.test_expression import TransactionExpressionCase
@@ -2594,7 +2593,7 @@ class PropertiesGroupByCase(TestPropertiesMixin):
         self.message_3.attributes = {'mychar': 'boum'}
 
         Model = self.env['test_orm.message']
-        with self.assertQueryCount(6):  # 3 for formatted_read_group + 1 query by group opened
+        with self.assertQueryCount(9):  # 3 for formatted_read_group + 1 query by group opened + 1 query by get_property_definition
             result = Model.web_read_group(
                 domain=[],
                 aggregates=['__count'],
@@ -2602,6 +2601,7 @@ class PropertiesGroupByCase(TestPropertiesMixin):
                 auto_unfold=True,
                 unfold_read_specification={'id': {}},
             )
+
         groups = result['groups']
 
         self.assertEqual(len(groups), 3)
@@ -3448,3 +3448,52 @@ class PropertiesGroupByCase(TestPropertiesMixin):
 
     def test_properties_field_read_group_datetime(self):
         self.subtest_properties_field_web_read_group_date_like('datetime')
+
+    def test_unfold_read_specification_on_web_read_group(self):
+        """
+        - When 'unfold_read_specification' is provided, unfolded records
+        include the explicitly requested fields (here: 'author').
+        - When 'unfold_read_specification' is None, unfolding falls back to the
+        default behavior and only returns record 'id'.
+        """
+        self.messages.discussion = self.discussion_1
+        self.discussion_1.write({'participants': [Command.link(self.test_user.id)]})
+        self.message_2.author = self.test_user
+
+        result = self.env['test_orm.message'].web_read_group(
+            domain=[],
+            aggregates=['__count'],
+            groupby=['author'],
+            auto_unfold=True,
+            unfold_read_specification={'author': {}},
+        )
+        group1 = result['groups']
+
+        # If no unfold specification is provided, only `id` is returned by default
+        result = self.env['test_orm.message'].web_read_group(
+            domain=[],
+            aggregates=['__count'],
+            groupby=['author'],
+            auto_unfold=True,
+            unfold_read_specification=None,
+        )
+        group2 = result['groups']
+
+        # group user 1
+        self.assertEqual(
+            group1[0]["__records"],
+            [
+                {"id": self.message_1.id, "author": self.env.user.id},
+                {"id": self.message_3.id, "author": self.env.user.id},
+                {"id": self.message_4.id, "author": self.env.user.id},
+            ],
+        )
+        self.assertEqual(
+            group2[0]["__records"],
+            [
+                {"id": self.message_1.id}, {"id": self.message_3.id}, {"id": self.message_4.id},
+            ],
+        )
+        # group user 2
+        self.assertEqual(group1[1]['__records'], [{'id': self.message_2.id, 'author': self.test_user.id}])
+        self.assertEqual(group2[1]['__records'], [{'id': self.message_2.id}])

@@ -33,9 +33,11 @@ class TestMultistepManufacturingWarehouse(TestMrpCommon):
         product_form.name = 'Stick'
         product_form.uom_id = cls.uom_unit
         product_form.is_storable = True
-        product_form.route_ids.clear()
-        product_form.route_ids.add(cls.warehouse.mto_pull_id.route_id)
         cls.finished_product = product_form.save()
+        # Assign the MTO route directly to avoid requiring route_ids to be
+        # visible in the form (which would need product_selectable routes to
+        # be present, an assumption that doesn't hold on DBs without demo data)
+        cls.finished_product.route_ids = cls.warehouse.mto_pull_id.route_id
 
         # Create raw product for manufactured product
         product_form = Form(cls.env['product.product'])
@@ -885,3 +887,12 @@ class TestMultistepManufacturingWarehouse(TestMrpCommon):
         mo.action_confirm()
         self.assertEqual(mo.state, 'confirmed')
         self.assertEqual(lovely_product.with_context(location_id=self.warehouse_1.lot_stock_id.id).virtual_available, 3.0)
+
+    def test_manufacture_to_resupply_unchecks_and_unlinks_warehouse(self):
+        """Unchecking Manufacture to Resupply should keep manufacture_to_resupply disabled."""
+        manufacture_route = self.warehouse.manufacture_pull_id.route_id
+        self.warehouse.manufacture_to_resupply = False
+        # Invalidate recordset to avoid cached `manufacture_to_resupply`
+        self.warehouse.invalidate_recordset(["manufacture_to_resupply"])
+        self.assertFalse(self.warehouse.manufacture_to_resupply)
+        self.assertNotIn(self.warehouse, manufacture_route.warehouse_ids)

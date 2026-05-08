@@ -70,7 +70,7 @@ def load_demo(env: Environment, package: ModuleNode, idref: IdRef, mode: LoadMod
         if package.manifest.get('demo') or package.manifest.get('demo_xml'):
             _logger.info("Module %s: loading demo", package.name)
             with env.cr.savepoint(flush=False):
-                load_data(env(su=True), idref, mode, kind='demo', package=package)
+                load_data(env(su=True, context=dict(env.context, install_demo=True)), idref, mode, kind='demo', package=package)
         return True
     except Exception:  # noqa: BLE001
         # If we could not install demo data for this module
@@ -90,6 +90,7 @@ def force_demo(env: Environment) -> None:
     """
     Forces the `demo` flag on all modules, and installs demo data for all installed modules.
     """
+    assert env.registry.ready
     env.cr.execute('UPDATE ir_module_module SET demo=True')
     env.cr.execute(
         "SELECT name FROM ir_module_module WHERE state IN ('installed', 'to upgrade', 'to remove')"
@@ -102,6 +103,13 @@ def force_demo(env: Environment) -> None:
         load_demo(env, package, {}, 'init')
 
     env['ir.module.module'].invalidate_model(['demo'])
+
+    # If demo data triggered module state changes (to install/upgrade/remove),
+    # commit and rebuild registry to process button_install/upgrade calls.
+    if env['ir.module.module'].search_count([('state', 'in', ('to install', 'to upgrade', 'to remove'))], limit=1):
+        env.cr.commit()
+        Registry.new(env.cr.dbname, update_module=True)
+        env.transaction.reset()
 
 
 def load_module_graph(
@@ -612,8 +620,7 @@ def reset_modules_state(db_name: str) -> None:
     # of time
     db = odoo.sql_db.db_connect(db_name)
     with db.cursor() as cr:
-        cr.execute("SELECT 1 FROM information_schema.tables WHERE table_name='ir_module_module'")
-        if not cr.fetchall():
+        if not odoo.tools.sql.table_exists(cr, 'ir_module_module'):
             _logger.info('skipping reset_modules_state, ir_module_module table does not exists')
             return
         cr.execute(

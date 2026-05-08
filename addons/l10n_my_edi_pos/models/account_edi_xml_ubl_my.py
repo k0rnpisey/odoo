@@ -24,6 +24,25 @@ class AccountEdiXmlUBLMyInvoisMY(models.AbstractModel):
                 'total_paid_amount_currency': sum(myinvois_document.pos_order_ids.mapped('amount_paid')),
             })
 
+    def _add_myinvois_document_monetary_total_nodes(self, document_node, vals):
+        super()._add_myinvois_document_monetary_total_nodes(document_node, vals)
+        myinvois_document = vals["myinvois_document"]
+        # For individual POS e-invoices, the prepaid amount must be 0.
+        # POS orders are paid immediately at the point of sale, MyInvois requires
+        # the PayableAmount to reflect the full invoice amount (not reduced by prepayment).
+        if not myinvois_document._is_consolidated_invoice() and myinvois_document.invoice_ids.pos_order_ids:
+            currency_suffix = vals['currency_suffix']
+            document_node['cac:PrepaidPayment'] = {
+                'cbc:PaidAmount': {
+                    '_text': self.format_float(0.0, vals['currency_dp']),
+                    'currencyID': vals['currency_name'],
+                }
+            }
+            monetary_total_tag = self._get_tags_for_document_type(vals)['monetary_total']
+            document_node[monetary_total_tag]['cbc:PayableAmount']['_text'] = self.format_float(
+                vals[f'tax_inclusive_amount{currency_suffix}'], vals['currency_dp']
+            )
+
     @api.model
     def _l10n_my_edi_get_refund_details(self, invoice):
         """
@@ -151,8 +170,13 @@ class AccountEdiXmlUBLMyInvoisMY(models.AbstractModel):
             total_amount = total_amount_currency = 0.0
             for base_line in base_lines:
                 sign = -1 if base_line["is_refund"] else 1
-                total_amount += sign * ((base_line['price_unit'] / base_line['rate']) * base_line['quantity'])
-                total_amount_currency += sign * (base_line['price_unit'] * base_line['quantity'])
+                discount_factor = 1 - (base_line['discount'] / 100.0)
+                if discount_factor:
+                    total_amount += sign * (base_line['tax_details']['raw_total_excluded'] / discount_factor)
+                    total_amount_currency += sign * (base_line['tax_details']['raw_total_excluded_currency'] / discount_factor)
+                else:
+                    total_amount += sign * ((base_line['price_unit'] / base_line['rate']) * base_line['quantity'])
+                    total_amount_currency += sign * (base_line['price_unit'] * base_line['quantity'])
 
             new_base_line = AccountTax._prepare_base_line_for_taxes_computation(
                 {},
@@ -359,7 +383,7 @@ class AccountEdiXmlUBLMyInvoisMY(models.AbstractModel):
         self._add_document_monetary_total_nodes(document_node, vals)
         currency_suffix = vals['currency_suffix']
 
-        amount_paid = vals[f'total_paid_amount{currency_suffix}']
+        amount_paid = 0.0
         document_node['cac:PrepaidPayment'] = {
             'cbc:PaidAmount': {
                 '_text': self.format_float(amount_paid, vals['currency_dp']),

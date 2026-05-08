@@ -4,6 +4,7 @@ from lxml import etree
 import requests
 
 from odoo import Command, fields
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tools import file_open
 
@@ -163,6 +164,62 @@ class TestHrEdiFlowsMocked(TestL10nHrEdiCommon, TestAccountMoveSendCommon, Patch
             'l10n_hr_mer_document_eid': '3083666',
         }])
 
+    def test_send_invoice_error(self):
+        self.setup_partner_as_hr(self.env.company.partner_id)
+        self.setup_partner_as_hr_alt(self.partner_a)
+        tax = self.env['account.chart.template'].ref('VAT_S_IN_ROC_25')
+
+        invoice = self.env['account.move'].create({
+            'invoice_date': '2025-01-01',
+            'date': '2025-01-01',
+            'move_type': 'out_invoice',
+            'partner_id': self.partner_a.id,
+            'invoice_line_ids': [
+                Command.create({
+                    'product_id': self.product_a.id,
+                    'price_unit': 100.0,
+                    'tax_ids': [Command.set(tax.ids)],
+                }),
+            ],
+        })
+        invoice.action_post()
+
+        self.assertRecordValues(invoice, [{
+            'l10n_hr_process_type': 'P1',
+            'l10n_hr_fiscal_user_id': self.env.user.partner_id.id,
+            'l10n_hr_operator_name': 'Because I am accountman!',
+            'l10n_hr_operator_oib': '01234567896',
+        }])
+
+        send_and_print = self.create_send_and_print(invoice)
+
+        with file_open('l10n_hr_edi/tests/flows/out_invoice.xml', 'r') as f:
+            expected_invoice_xml = f.read()
+
+        with self.assertRaisesRegex(UserError, r"MER service returned an error: Username '12513': Korisničko ime i lozinka nisu ispravni\.\. Trace ID: 4f701362-96cc-49c6-a297-854e740ad719\."):
+            with self.assertRequests([
+                (
+                    # Request 1: Send invoice - error should be triggered
+                    self._build_request(
+                        endpoint='/apis/v2/send',
+                        request_args={
+                            'File': expected_invoice_xml,
+                        },
+                    ),
+                    self._build_response(
+                        status_code=200,
+                        response_json={
+                            'Username':
+                                {
+                                    'Value': '12513',
+                                    'Messages': ['Korisničko ime i lozinka nisu ispravni.. Trace ID: 4f701362-96cc-49c6-a297-854e740ad719.']
+                                }
+                            }
+                    ),
+                ),
+            ]):
+                send_and_print._generate_and_send_invoices(invoice)
+
     # -------------------------------------------------------------------------
     # Receiving flow
     # -------------------------------------------------------------------------
@@ -314,3 +371,24 @@ class TestHrEdiFlowsMocked(TestL10nHrEdiCommon, TestAccountMoveSendCommon, Patch
         }])
 
         self.assertEqual(fetched_invoice.invoice_line_ids.tax_ids.amount, 13.0)
+
+    def test_query_inbox_error(self):
+        self.setup_partner_as_hr(self.env.company.partner_id)
+
+        with self.assertRaisesRegex(UserError, r"MER service returned an error: Username '12513': Korisničko ime i lozinka nisu ispravni."):
+            with self.assertRequests([
+                (
+                    # Request 1: queryInbox - error should be triggered
+                    self._build_request(endpoint='/apis/v2/queryInbox'),
+                    self._build_response(
+                        status_code=200,
+                        response_json={
+                            'Username': {
+                                'Value': '12513',
+                                'Messages': ['Korisničko ime i lozinka nisu ispravni.'],
+                            },
+                        }
+                    )
+                ),
+            ]):
+                self.company_data['default_journal_purchase'].l10n_hr_mer_get_new_documents_all()

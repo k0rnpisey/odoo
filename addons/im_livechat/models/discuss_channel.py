@@ -438,6 +438,11 @@ class DiscussChannel(models.Model):
         fields = [
             "chatbot_current_step",
             Store.One("country_id", ["code", "name"], predicate=is_livechat_channel),
+            Store.One(
+                "livechat_lang_id",
+                ["name"],
+                predicate=is_livechat_channel,
+            ),
             Store.Attr("livechat_end_dt", predicate=is_livechat_channel),
             # sudo - res.partner: accessing livechat operator is allowed
             Store.One(
@@ -622,8 +627,14 @@ class DiscussChannel(models.Model):
         self.ensure_one()
         parts = []
         previous_message_author = None
-        # sudo - mail.message: getting empty messages to exclude them is allowed.
-        for message in (self.message_ids - self.message_ids.sudo()._filter_empty()).sorted("id"):
+        # sudo - mail.message: visitors can access messages on chats they have access to
+        messages = self.sudo().chatbot_message_ids.mail_message_id or self.message_ids
+        # sudo - mail.message: getting empty/notification messages to exclude them is allowed.
+        filtered_messages = (
+            messages.sudo().filtered(lambda m: m.message_type != "notification")
+            - messages.sudo()._filter_empty()
+        )
+        for message in filtered_messages.sorted("id"):
             # sudo - res.partner: accessing livechat username or name is allowed to visitor
             message_author = message.author_id.sudo() or message.author_guest_id
             if previous_message_author != message_author:
@@ -644,7 +655,12 @@ class DiscussChannel(models.Model):
         return Markup("").join(parts)
 
     def _get_livechat_session_fields_to_store(self):
-        return []
+        return [
+            Store.One(
+                "livechat_lang_id", ["name"],
+                predicate=is_livechat_channel,
+            ),
+        ]
 
     # =======================
     # Chatbot

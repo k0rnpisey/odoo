@@ -76,7 +76,7 @@ patch(PosStore.prototype, {
             for (const order of orders) {
                 // Avoid to block others devices on register screen when no table and name is set.
                 if (!order.table_id && !order.floating_order_name) {
-                    order.floating_order_name = order.pos_reference;
+                    order.floating_order_name = order.floatingOrderName || order.pos_reference;
                 }
             }
         }
@@ -164,6 +164,11 @@ patch(PosStore.prototype, {
     async mergeOrders(sourceOrder, destOrder) {
         let whileGuard = 0;
         const mergedCourses = this.mergeCourses(sourceOrder, destOrder);
+
+        // Sum the guest counts from both orders
+        const totalGuests = sourceOrder.getCustomerCount() + destOrder.getCustomerCount();
+        destOrder.setCustomerCount(totalGuests);
+
         while (sourceOrder.lines.length) {
             const orphanLine = sourceOrder.lines[0];
             const destinationLine = destOrder?.lines?.find((l) => l.canBeMergedWith(orphanLine));
@@ -236,8 +241,10 @@ patch(PosStore.prototype, {
             }
         }
 
-        await this.deleteOrders([sourceOrder], [], true);
-        this.syncAllOrders({ orders: [destOrder] });
+        if (typeof destOrder.id === "number") {
+            await this.syncAllOrders({ orders: [destOrder] });
+        }
+        await this.deleteOrders([sourceOrder], [], typeof sourceOrder.id === "number");
         return destOrder;
     },
     mergeCourses(sourceOrder, destOrder) {
@@ -550,6 +557,11 @@ patch(PosStore.prototype, {
         this.addPendingOrder([order.id]);
         this.showDefault();
     },
+    async reprintOrder() {
+        const order = this.getOrder();
+        await this.sendOrderInPreparation(order, { explicitReprint: true });
+        this.showDefault();
+    },
     async _askForPreparation() {
         const order = this.getOrder();
         if (this.config.module_pos_restaurant && order.hasChange && !order.isRefund) {
@@ -580,9 +592,9 @@ patch(PosStore.prototype, {
     async getServerOrders() {
         if (this.config.module_pos_restaurant) {
             const tableIds = [].concat(
-                ...this.models["restaurant.floor"].map((floor) =>
-                    floor.table_ids.map((table) => table.id)
-                )
+                ...this.config.floor_ids
+                    .filter((floor) => floor.active)
+                    .map((floor) => floor.table_ids.map((table) => table.id))
             );
             await this.syncAllOrders({ table_ids: tableIds });
         }
@@ -904,7 +916,11 @@ patch(PosStore.prototype, {
         return this.floorScrollPositions[floorId];
     },
     shouldCreatePendingOrder(order) {
-        return super.shouldCreatePendingOrder(order) || order.course_ids?.length > 0;
+        return (
+            super.shouldCreatePendingOrder(order) ||
+            order.course_ids?.length > 0 ||
+            Boolean(order.table_id)
+        );
     },
     setOrder(order) {
         order?.ensureCourseSelection();

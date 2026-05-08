@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from odoo.exceptions import AccessError
 from odoo.fields import Command
-from odoo.tests.common import tagged, new_test_user, TransactionCase
+from odoo.tests.common import tagged, new_test_user, JsonRpcException, TransactionCase
 from odoo.tools import mute_logger
 
 from odoo.addons.base.tests.common import HttpCase
@@ -96,7 +96,8 @@ class TestPartnerAssign(TransactionCase):
             pass
 
 
-class TestPartnerLeadPortal(TestCrmCommon):
+@tagged('lead_portal')
+class TestPartnerLeadPortal(TestCrmCommon, HttpCase):
 
     def setUp(self):
         super(TestPartnerLeadPortal, self).setUp()
@@ -245,6 +246,82 @@ class TestPartnerLeadPortal(TestCrmCommon):
         record_action = self.lead_portal._get_access_action(access_uid=self.user_portal.id)
         self.assertEqual(record_action['url'], '/my/opportunity/%s' % self.lead_portal.id)
         self.assertEqual(record_action['type'], 'ir.actions.act_url')
+
+    def test_portal_post(self):
+        self.authenticate(self.user_portal.login, self.user_portal.login)
+        self.make_jsonrpc_request(
+            route="/mail/message/post",
+            params={
+                'thread_model': self.lead_portal._name,
+                'thread_id': self.lead_portal.id,
+                'pid': self.user_portal.partner_id.id,
+                'post_data': {
+                    'body': "Test",
+                },
+            },
+        )
+        message = self.lead_portal.message_ids[0]
+        self.assertMessageFields(
+            message, {
+                'author_id': self.user_portal.partner_id,
+                'body': '<p>Test</p>',
+                'message_type': 'comment',
+            }
+        )
+
+    def test_portal_post_child_contact_assigned(self):
+        """ Test that a child contact of the assigned partner can post a
+        message on the lead, and that an unrelated portal user cannot. """
+        child_partner = self.env['res.partner'].create({
+            'name': 'Child Portal Contact',
+            'parent_id': self.user_portal.partner_id.id,
+            'email': 'child.portal@test.example.com',
+        })
+        user_child_portal = mail_new_test_user(
+            self.env, login='user_child_portal',
+            partner_id=child_partner.id,
+            groups='base.group_portal',
+        )
+        self.authenticate(user_child_portal.login, user_child_portal.login)
+        result = self.make_jsonrpc_request(
+            route="/mail/message/post",
+            params={
+                'thread_model': self.lead_portal._name,
+                'thread_id': self.lead_portal.id,
+                'post_data': {
+                    'body': 'Test',
+                    'message_type': 'comment',
+                    'subtype_xmlid': 'mail.mt_comment',
+                },
+            },
+        )
+        message = self.env['mail.message'].browse(result['message_id'])
+        self.assertMessageFields(
+            message, {
+                'author_id': child_partner,
+                'body': '<p>Test</p>',
+                'message_type': 'comment',
+            },
+        )
+        # An unrelated portal user (not a child of the assigned partner) must not be able to post
+        unrelated_portal_user = mail_new_test_user(
+            self.env, login='user_unrelated_portal',
+            groups='base.group_portal',
+        )
+        self.authenticate(unrelated_portal_user.login, unrelated_portal_user.login)
+        with self.assertRaises(JsonRpcException), mute_logger('odoo.http'):
+            self.make_jsonrpc_request(
+                route="/mail/message/post",
+                params={
+                    'thread_model': self.lead_portal._name,
+                    'thread_id': self.lead_portal.id,
+                    'post_data': {
+                        'body': 'Should not post',
+                        'message_type': 'comment',
+                        'subtype_xmlid': 'mail.mt_comment',
+                    },
+                },
+            )
 
     def test_route_portal_my_opportunities_as_portal(self):
         """Test that the portal user can access its own opportunities even if

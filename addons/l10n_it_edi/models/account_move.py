@@ -2,13 +2,14 @@
 import logging
 import re
 import uuid
+import unicodedata
 from base64 import b64encode, b64decode
 from collections import defaultdict
 from datetime import datetime
-
 from lxml import etree
 from odoo.addons.base.models.ir_qweb_fields import Markup, nl2br, nl2br_enclose
 from odoo.exceptions import LockError, UserError
+from odoo.fields import Domain
 from odoo.tools import cleanup_xml_node, float_compare, float_is_zero, float_repr, float_round, html2plaintext
 from odoo.tools.sql import column_exists, create_column
 
@@ -73,6 +74,7 @@ class AccountMove(models.Model):
             ('accepted_by_pa_partner_after_expiry', 'SdI Accepted, PA Partner Expired Terms'),
         ],
         copy=False, tracking=True,
+        inverse="_inverse_l10n_it_edi_state",
         help="This state is updated by default, but you can force the value. ",
     )
     l10n_it_edi_header = fields.Html(
@@ -109,6 +111,9 @@ class AccountMove(models.Model):
         help="Public Investment Unique Identifier")
     # Technical field for showing the above fields or not
     l10n_it_partner_pa = fields.Boolean(compute='_compute_l10n_it_partner_pa')
+    l10n_it_partner_is_public_administration = fields.Boolean(compute='_compute_l10n_it_partner_is_public_administration',
+        help='Only partners that have a 6-chars long l10n_it_pa_index actually belong to the Public Administration'
+    )
 
     l10n_it_payment_method = fields.Selection(
         selection=L10N_IT_PAYMENT_METHOD_SELECTION,
@@ -180,6 +185,12 @@ class AccountMove(models.Model):
         for move in self:
             partner = move.commercial_partner_id
             move.l10n_it_partner_pa = partner and (partner._l10n_it_edi_is_public_administration() or len(partner.l10n_it_pa_index or '') == 7)
+
+    @api.depends('commercial_partner_id.l10n_it_pa_index', 'company_id')
+    def _compute_l10n_it_partner_is_public_administration(self):
+        for move in self:
+            partner = move.commercial_partner_id
+            move.l10n_it_partner_is_public_administration = partner and partner._l10n_it_edi_is_public_administration()
 
     @api.depends('country_code', 'l10n_it_edi_proxy_mode')
     def _compute_l10n_it_edi_button_label(self):
@@ -325,6 +336,11 @@ class AccountMove(models.Model):
         self.with_context(skip_is_manually_modified=True).write({'l10n_it_edi_header': False})
         return super()._post(soft)
 
+    def _inverse_l10n_it_edi_state(self):
+        for move in self:
+            if move.is_move_sent and move.l10n_it_edi_state in ('rejected', 'rejected_by_pa_partner'):
+                move.is_move_sent = False
+
     def _get_fields_to_detach(self):
         # EXTENDS account
         fields_list = super()._get_fields_to_detach()
@@ -379,7 +395,13 @@ class AccountMove(models.Model):
 
     def action_check_l10n_it_edi(self):
         self.ensure_one()
-        if not self.l10n_it_edi_transaction and self.l10n_it_edi_state not in WAITING_STATES:
+        if (
+            not self.l10n_it_edi_transaction
+            and self.l10n_it_edi_state not in WAITING_STATES
+        ) or (
+            self.l10n_it_edi_state == 'forwarded'
+            and not self.l10n_it_partner_is_public_administration
+        ):
             raise UserError(_("This move is not waiting for updates from the SdI."))
         if self.l10n_it_edi_state == 'being_sent':
             return {'type': 'ir.actions.client', 'tag': 'reload'}
@@ -395,7 +417,7 @@ class AccountMove(models.Model):
         # EXTENDS 'account'
         self.ensure_one()
         if filetype == 'fatturapa':
-            if fatturapa_attachment := self.l10n_it_edi_attachment_file:
+            if (fatturapa_attachment := self.l10n_it_edi_attachment_file) and self.l10n_it_edi_attachment_name:
                 return {
                     'filename': self.l10n_it_edi_attachment_name,
                     'filetype': 'xml',
@@ -627,6 +649,32 @@ class AccountMove(models.Model):
 
         return base_line
 
+    def _l10n_it_edi_get_oss_line_values(self, aml, base_line, vat_tax, n7_tax, n22_tax):
+        base_line['tax_ids'] = n7_tax
+        tax_amount = (base_line['price_unit'] * (1 - (base_line['discount'] / 100.0))) * (vat_tax.amount / 100.0)
+
+        oss_description = self.env._(
+            "VAT %(vat_code)s %(tax_amount)s collected via OSS",
+            vat_code=vat_tax.country_id.code,
+            tax_amount=vat_tax.amount
+        )
+
+        vat_line = base_line.copy()
+        vat_line.update({
+            'id': f"{base_line.get('id', aml.id)}_vat",
+            'name': oss_description,
+            'tax_ids': n22_tax,
+            'price_unit': tax_amount,
+            'quantity': base_line['quantity'],
+            'discount': 0.0,
+            'record': aml.new({
+                'name': oss_description,
+                'move_id': aml.move_id.id,
+            }),
+        })
+
+        return [base_line, vat_line]
+
     def _l10n_it_edi_get_values(self, pdf_values=None):
         def grouping_function_withholding(base_line, tax_data):
             if not tax_data:
@@ -670,7 +718,18 @@ class AccountMove(models.Model):
 
         # Base lines.
         base_amls = self.line_ids.filtered(lambda x: x.display_type == 'product' or x.display_type == 'rounding')
-        base_lines = [self._prepare_product_base_line_for_taxes_computation(x) for x in base_amls]
+
+        n7_tax = self.env['account.chart.template'].ref('00ex7', raise_if_not_found=False)
+        n22_tax = self.env['account.chart.template'].ref('00ex', raise_if_not_found=False)
+        base_lines = []
+        for aml in base_amls:
+            base_line = self._prepare_product_base_line_for_taxes_computation(aml)
+            vat_tax = aml.tax_ids.flatten_taxes_hierarchy().filtered(lambda t: t._l10n_it_filter_kind('vat') and t.amount >= 0)[:1]
+            is_oss = vat_tax and 'OSS' in vat_tax.invoice_repartition_line_ids.tag_ids.mapped('name')
+            if is_oss and n7_tax and n22_tax:
+                base_lines += self._l10n_it_edi_get_oss_line_values(aml, base_line, vat_tax, n7_tax, n22_tax)
+            else:
+                base_lines.append(base_line)
         tax_amls = self.line_ids.filtered('tax_repartition_line_id')
         tax_lines = [self._prepare_tax_line_for_taxes_computation(x) for x in tax_amls]
 
@@ -744,8 +803,8 @@ class AccountMove(models.Model):
             grouping_key = values['grouping_key']
             if grouping_key is False:
                 continue
-            importo_totale_documento += values['base_amount_currency']
-            importo_totale_documento += values['tax_amount_currency']
+            importo_totale_documento += values['base_amount']
+            importo_totale_documento += values['tax_amount']
 
         company = self.company_id._l10n_it_get_edi_company()
         partner = self.commercial_partner_id
@@ -767,7 +826,7 @@ class AccountMove(models.Model):
         # Reference line for finding the conversion rate used in the document
         conversion_rate = float_repr(
             abs(self.amount_total / self.amount_total_signed), precision_digits=5,
-        ) if convert_to_euros and self.invoice_line_ids else None
+        ) if convert_to_euros and self.invoice_line_ids and not self.currency_id.is_zero(self.amount_total_signed) else None
 
         # Aggregated linked invoices
         linked_moves = (self._get_reconciled_invoices() | self.reversed_entry_id).filtered(lambda move: move.date <= self.date)
@@ -924,9 +983,9 @@ class AccountMove(models.Model):
             Example: a consultant goes to the restaurant and wants the invoice instead of the receipt,
             to be able to deduct the expense from his Taxes. The Italian State allows the restaurant
             to issue a Simplified Invoice with the VAT number only, to speed up times, instead of
-            requiring the address and other informations about the buyer.
-            Only invoices under the threshold of 400 Euroes are allowed, to avoid this tool
-            be abused for bigger transactions, that would enable less transparency to tax institutions.
+            requiring the address and other information about the buyer.
+            The maximum threshold is 400 Euro, except for the forfettario tax regime (RF19), which can
+            issue simplified invoices without the amount limit.
         """
         self.ensure_one()
         template_reference = self.env.ref('l10n_it_edi.account_invoice_it_simplified_FatturaPA_export', raise_if_not_found=False)
@@ -938,7 +997,7 @@ class AccountMove(models.Model):
             and list(buyer._l10n_it_edi_export_check(checks).keys()) == ['l10n_it_edi_partner_address_missing']
             and (not buyer.country_id or buyer.country_id.code == 'IT')
             and (buyer.l10n_it_codice_fiscale or (buyer.vat and (buyer.vat[:2].upper() == 'IT' or buyer.vat[:2].isdecimal())))
-            and self.amount_total <= 400
+            and (self.company_id.l10n_it_tax_system == 'RF19' or self.amount_total <= 400)
         )
 
     def _l10n_it_edi_is_professional_fees(self):
@@ -1120,7 +1179,15 @@ class AccountMove(models.Model):
                 moves_to_check = self.search([
                     ('company_id', '=', proxy_user.company_id.id),
                     ('l10n_it_edi_transaction', '!=', False),
-                    ('l10n_it_edi_state', 'in', WAITING_STATES)
+                    *Domain.OR(
+                        [[('l10n_it_edi_state', 'in', WAITING_STATES)],
+                        Domain.AND(
+                            [
+                                [('l10n_it_edi_state', '=', 'forwarded')],
+                                [('commercial_partner_id.l10n_it_pa_index', '=ilike', '_' * 6)],
+                            ]
+                        )]
+                    )
                 ])
                 if moves_to_check:
                     moves_to_check._l10n_it_edi_update_send_state()
@@ -1194,28 +1261,7 @@ class AccountMove(models.Model):
             proxy_acks.append(id_transaction)
 
         if attachment_vals:
-            attachments = self.env['ir.attachment'].with_company(proxy_user.company_id).create(attachment_vals)
-
-            # Unwrap the attachments. Potentially each FatturaPA file can get unwrapped into several sub-attachments that
-            # should each create one invoice.
-            files_data = self._to_files_data(attachments)
-            files_data.extend(self._unwrap_attachments(files_data))
-
-            moves = self.with_company(proxy_user.company_id).create([{}] * len(files_data))
-
-            for move, file_data in zip(moves, files_data):
-                attachment = file_data['attachment']
-                attachment.write({'res_model': 'account.move', 'res_id': move.id, 'res_field': 'l10n_it_edi_attachment_file'})
-
-                # Post the attachment in the chatter
-                move.message_post(
-                    body=_("This invoice was retrieved from the SdI."),
-                    attachment_ids=attachment.ids
-                )
-
-            # Extend created moves with the related attachments.
-            for move, file_data in zip(moves, files_data):
-                move._extend_with_attachments([file_data], new=True)
+            self._l10n_it_edi_process_downloads_attachments(proxy_user.company_id, attachment_vals)
 
         return {"retrigger": retrigger, "proxy_acks": proxy_acks}
 
@@ -1248,6 +1294,34 @@ class AccountMove(models.Model):
             return False
 
         return filename, decrypted_content
+
+    def _l10n_it_edi_process_downloads_attachments(self, company_id, attachment_vals):
+        attachments = self.env['ir.attachment'].with_company(company_id).create(attachment_vals)
+
+        # Unwrap the attachments. Potentially each FatturaPA file can get unwrapped into several sub-attachments that
+        # should each create one invoice.
+        files_data = self._to_files_data(attachments)
+        files_data.extend(self._unwrap_attachments(files_data))
+
+        moves = self.with_company(company_id).create([{}] * len(files_data))
+
+        for move, file_data in zip(moves, files_data):
+            # TODO: write to l10n_it_edi_attachment_file directly
+            attachment = file_data['attachment']
+            attachment.write({'res_model': 'account.move', 'res_id': move.id, 'res_field': 'l10n_it_edi_attachment_file'})
+            move.l10n_it_edi_attachment_name = file_data['name']
+
+            # Post the attachment in the chatter
+            move.message_post(
+                body=_("This invoice was retrieved from the SdI."),
+                attachment_ids=attachment.ids
+            )
+
+        # Extend created moves with the related attachments.
+        for move, file_data in zip(moves, files_data):
+            move._extend_with_attachments([file_data], new=True)
+
+        return moves
 
     def _l10n_it_edi_search_partner(self, company, vat, codice_fiscale, email, destination_code=None):
         base_domain = self.env['res.partner']._check_company_domain(company)
@@ -1313,19 +1387,34 @@ class AccountMove(models.Model):
                 importo_ritenuta = get_float(withholding, './/ImportoRitenuta')
                 withholding_percentage = -float_round((importo_ritenuta / prezzo_totale) * 100, 1)
 
-            withholding_tax = self._l10n_it_edi_search_tax_for_import(
-                company,
-                withholding_percentage,
-                ([('l10n_it_withholding_type', '=', withholding_type),
-                  ('l10n_it_withholding_reason', '=', withholding_reason)]
-                 + type_tax_use_domain))
-            if withholding_tax:
-                withholding_taxes.append(withholding_tax)
+            # Some bills involving ENASARCO come in with a wrong withholding_reason
+            # so we defend ourselves by searching with exact type and reason first,
+            # then with just the type
+            for extra_domain, message in ([(
+                [
+                    ('l10n_it_withholding_type', '=', withholding_type),
+                    ('l10n_it_withholding_reason', '=', withholding_reason),
+                    *type_tax_use_domain
+                ],
+                None
+            ), (
+                [
+                    ('l10n_it_withholding_type', '=', withholding_type),
+                    *type_tax_use_domain
+                ],
+                _("ENASARCO tax (type %(wtype)s) has wrong reason %(reason)s",
+                  wtype=withholding_type, reason=withholding_reason))
+            ]):
+                if withholding_tax := self._l10n_it_edi_search_tax_for_import(
+                    company, withholding_percentage, extra_domain,
+                ):
+                    withholding_taxes.append(withholding_tax)
+                    break
             else:
-                message_to_log.append(Markup("%s<br/>%s") % (
-                    _("Withholding tax not found"),
-                    self.env['account.move']._compose_info_message(body_tree, '.'),
-                ))
+                message = _("Withholding tax not found")
+            if message:
+                message_to_log.append(Markup("%s<br/>%s") % (message, self._compose_info_message(body_tree, '.')))
+
         extra_info["withholding_taxes"] = withholding_taxes
 
         pension_fund_elements = body_tree.xpath('.//DatiGeneraliDocumento/DatiCassaPrevidenziale')
@@ -1343,7 +1432,10 @@ class AccountMove(models.Model):
                 ([('l10n_it_pension_fund_type', '=', pension_fund_type)]
                  + type_tax_use_domain))
             if pension_fund_tax:
-                pension_fund_taxes[vat_tax_factor_percent] = pension_fund_tax
+                if vat_tax_factor_percent not in pension_fund_taxes:
+                    pension_fund_taxes[vat_tax_factor_percent] = pension_fund_tax
+                else:
+                    pension_fund_taxes[vat_tax_factor_percent] |= pension_fund_tax
             else:
                 message_to_log.append(Markup("%s<br/>%s") % (
                     _("Pension Fund tax not found"),
@@ -1446,9 +1538,9 @@ class AccountMove(models.Model):
                 ))
                 message_to_log.append(message)
 
-            # Numbering attributed by the transmitter
-            if progressive_id := get_text(tree, '//ProgressivoInvio'):
-                self.payment_reference = progressive_id
+            # Payment code
+            if payment_code := get_text(tree, './/DettaglioPagamento[1]/CodicePagamento'):
+                self.payment_reference = payment_code
 
             # Document Number
             if number := get_text(tree, './/DatiGeneraliDocumento//Numero'):
@@ -1555,12 +1647,18 @@ class AccountMove(models.Model):
                 if move_line:
                     message_to_log += self._l10n_it_edi_import_line(element, move_line, extra_info)
 
+            attachment_vals = []
             for element in tree.xpath('.//Allegati'):
-                self.l10n_it_edi_attachment_name = get_text(element, './/NomeAttachment')
-                self.l10n_it_edi_attachment_file = b64decode(get_text(element, './/Attachment'))
+                raw_name = get_text(element, './/NomeAttachment') or ''
+                raw_ext = get_text(element, './/FormatoAttachment') or ''
+                attachment_vals.append((
+                    f"{raw_name}.{raw_ext}" if raw_ext and not raw_name.casefold().endswith(raw_ext.casefold()) else raw_name,
+                    b64decode(get_text(element, './/Attachment')),
+                ))
+            if attachment_vals:
                 self.sudo().message_post(
-                    body=(_("Attachment from XML")),
-                    attachments=[(self.l10n_it_edi_attachment_name, self.l10n_it_edi_attachment_file)],
+                    body=(_("Attachments from XML")),
+                    attachments=attachment_vals,
                 )
 
             global_enasarco_lines = []
@@ -1611,23 +1709,28 @@ class AccountMove(models.Model):
         move_line.name = " ".join(get_text(element, './/Descrizione').split())
 
         # Product.
+        company_domain = self.env['res.company']._check_company_domain(company)
         if elements_code := element.xpath('.//CodiceArticolo'):
             for element_code in elements_code:
                 type_code = element_code.xpath('.//CodiceTipo')[0]
                 code = element_code.xpath('.//CodiceValore')[0]
-                product = self.env['product.product'].search([('barcode', '=', code.text)])
+                product = self.env['product.product'].search(Domain.AND([company_domain, Domain('barcode', '=', code.text)]))
                 if (product and type_code.text == 'EAN'):
                     move_line.product_id = product
                     break
                 if partner:
-                    product_supplier = self.env['product.supplierinfo'].search([('partner_id', '=', partner.id), ('product_code', '=', code.text)], limit=2)
+                    product_supplier = self.env['product.supplierinfo'].search(Domain.AND([
+                        company_domain,
+                        Domain('partner_id', '=', partner.id),
+                        Domain('product_code', '=', code.text),
+                    ]), limit=2)
                     if product_supplier and len(product_supplier) == 1 and product_supplier.product_id:
                         move_line.product_id = product_supplier.product_id
                         break
             if not move_line.product_id:
                 for element_code in elements_code:
                     code = element_code.xpath('.//CodiceValore')[0]
-                    product = self.env['product.product'].search([('default_code', '=', code.text)], limit=2)
+                    product = self.env['product.product'].search(Domain.AND([company_domain, Domain('default_code', '=', code.text)]), limit=2)
                     if product and len(product) == 1:
                         move_line.product_id = product
                         break
@@ -1924,6 +2027,13 @@ class AccountMove(models.Model):
             sep = ' ' if street and street2 else ''
             return format_alphanumeric(f"{street}{sep}{street2}", maxlen)
 
+        def format_uom(uom, maxlen=None):
+            if not uom:
+                return False
+
+            uom = unicodedata.normalize('NFKC', uom)
+            return format_alphanumeric(uom, maxlen)
+
         return {
             'format_date': format_date,
             'format_float': format_float,
@@ -1933,6 +2043,7 @@ class AccountMove(models.Model):
             'format_phone': format_phone,
             'format_alphanumeric': format_alphanumeric,
             'format_address': format_address,
+            'format_uom': format_uom,
         }
 
     def _l10n_it_edi_render_xml(self, pdf_values=None):
@@ -2152,7 +2263,8 @@ class AccountMove(models.Model):
             return {'sdi_state': sdi_state}
 
         decrypted_update_content = etree.fromstring(xml_content)
-        outcome = get_text(decrypted_update_content, './/Esito')
+        outcome = get_text(decrypted_update_content, './/EsitoCommittente/Esito')
+        outcome_description = get_text(decrypted_update_content, './/EsitoCommittente/Descrizione')
         date_arrival = get_datetime(decrypted_update_content, './/DataOraRicezione') or fields.Date.today()
         errors = [(
             get_text(error_element, '//Codice'),
@@ -2164,6 +2276,7 @@ class AccountMove(models.Model):
             'sdi_state': sdi_state,
             'errors': errors,
             'outcome': outcome,
+            'outcome_description': outcome_description,
             'date': date_arrival,
             'filename': filename,
         }
@@ -2279,8 +2392,9 @@ class AccountMove(models.Model):
                     "The e-invoice file %(file)s has been refused by %(partner)s (Public Administration).\n"
                     "You have 5 days from now to issue a full refund for this invoice, "
                     "then contact the PA partner to create a new one according to their "
-                    "requests and submit it.",
-                    file=filename, partner=partner_name)),
+                    "requests and submit it.\n%(outcome_description)s",
+                    file=filename, partner=partner_name,
+                    outcome_description=transformed_notification.get('outcome_description', ''))),
                 'accepted_by_pa_partner': _(
                     "The e-invoice file %(file)s has been accepted by %(partner)s (Public Administration), a payment will be issued soon",
                     file=filename, partner=partner_name),
@@ -2323,10 +2437,19 @@ class AccountMove(models.Model):
         """
         pension_fund_map = extra_info.get('pension_fund_taxes', {})
         tax_rate = get_float(element, './/AliquotaIVA')
-        if not tax_rate:
+        l10n_it_exemption_reason = get_text(element, "Natura")
+
+        if not tax_rate and not l10n_it_exemption_reason:
             return None
 
-        pension_fund_tax = pension_fund_map.get(tax_rate)
+        pension_fund_tax_candidates = pension_fund_map.get(tax_rate)
+        if not pension_fund_tax_candidates:
+            return None
+
+        if l10n_it_exemption_reason and len(pension_fund_tax_candidates) > 1:
+            pension_fund_tax_candidates = pension_fund_tax_candidates.filtered(lambda t: t.l10n_it_exempt_reason == l10n_it_exemption_reason)
+        pension_fund_tax = pension_fund_tax_candidates[:1]
+
         if not pension_fund_tax:
             return None
 

@@ -770,7 +770,7 @@ export const accountTaxHelpers = {
         const factors = target_factors.map((x, i) => [i, Math.abs(x.factor)]);
         factors.sort((a, b) => b[1] - a[1]);
         const sum_of_factors = factors.reduce((sum, x) => sum + x[1], 0.0);
-        return factors.map((x) => [x[0], sum_of_factors ? x[1] / sum_of_factors : 0.0]);
+        return factors.map((x) => [x[0], sum_of_factors ? x[1] / sum_of_factors : 1 / factors.length]);
     },
 
     /**
@@ -958,9 +958,16 @@ export const accountTaxHelpers = {
             let current_mode = mode;
             if (current_mode === "mixed") {
                 current_mode = "included";
-                for (const base_line_taxes_data of values.base_line_x_taxes_data) {
-                    const taxes_data = base_line_taxes_data[1];
-                    if (taxes_data.some((tax_data) => !tax_data.price_include)) {
+                for (const [base_line, taxes_data] of values.base_line_x_taxes_data) {
+                    const not_zero_taxes_data = taxes_data.filter(
+                        (tax_data) =>
+                            !floatIsZero(
+                                tax_data.tax_amount_currency,
+                                base_line.currency_id.decimal_places
+                            ) &&
+                            !floatIsZero(tax_data.tax_amount, company.currency_id.decimal_places)
+                    );
+                    if (not_zero_taxes_data.some((tax_data) => !tax_data.price_include)) {
                         current_mode = "excluded";
                         break;
                     }
@@ -2406,11 +2413,13 @@ export const accountTaxHelpers = {
             ["", expected_base_amount - current_base_amount, company.currency_id],
         ]) {
             const target_factors = sorted_base_lines.map((base_line) => ({
-                factor: Math.abs(
-                    (base_line.tax_details.total_excluded_currency +
-                        base_line.tax_details.delta_total_excluded_currency) /
-                        current_base_amount_currency
-                ),
+                factor: current_base_amount_currency
+                    ? Math.abs(
+                          (base_line.tax_details.total_excluded_currency +
+                              base_line.tax_details.delta_total_excluded_currency) /
+                              current_base_amount_currency
+                      )
+                    : 0.0,
                 base_line: base_line,
             }));
             const amounts_to_distribute = this.distribute_delta_amount_smoothly(
@@ -2520,14 +2529,10 @@ export const accountTaxHelpers = {
                 (exclude_function && exclude_function(base_line, tax_data))
             );
         }
-
-        const new_base_lines = this.dispatch_taxes_into_new_base_lines(
+        return this.dispatch_taxes_into_new_base_lines(
             base_lines,
             company,
             dispatch_exclude_function.bind(this)
-        );
-        return new_base_lines.concat(
-            this.turn_removed_taxes_into_new_base_lines(new_base_lines, company)
         );
     },
 

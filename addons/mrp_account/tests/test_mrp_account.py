@@ -7,7 +7,7 @@ from odoo.addons.mrp_account.tests.common import TestBomPriceCommon, TestBomPric
 from odoo.tests import Form
 from odoo.tests.common import new_test_user
 from odoo.tools import float_compare, float_round
-from odoo import fields, Command
+from odoo import Command, fields
 
 
 class TestMrpAccount(TestBomPriceCommon):
@@ -159,6 +159,62 @@ class TestMrpAccount(TestBomPriceCommon):
         self.assertEqual(productB_debit_line.account_id, self.account_stock_valuation)
         self.assertEqual(productB_credit_line.account_id, self.account_production)
 
+    def test_delivery_validate_after_product_converted_to_kit(self):
+        """
+        Create a delivery for a product, make the product a kit then
+        validate it.
+        """
+        self.env['stock.quant']._update_available_quantity(self.dining_table, self.stock_location, 1)
+        self.screw.categ_id = self.category_avco_auto
+        self.stock_location.valuation_account_id = self.account_production
+        delivery = self.env['stock.picking'].create({
+            'location_id': self.stock_location.id,
+            'location_dest_id': self.customer_location.id,
+            'picking_type_id': self.picking_type_out.id,
+            'move_ids': [Command.create({
+                'product_id': self.dining_table.id,
+                'product_uom_qty': 1,
+                'location_id': self.stock_location.id,
+                'location_dest_id': self.customer_location.id,
+            })],
+        })
+        delivery.action_confirm()
+        self.bom_1.bom_line_ids = self.bom_1.bom_line_ids[1]
+        self.bom_1.type = 'phantom'
+        self.dining_table.invalidate_recordset()
+        delivery.button_validate()
+        self.assertEqual(delivery.move_ids.product_id, self.bom_1.bom_line_ids.product_id)
+        self.assertEqual(delivery.state, 'assigned')
+        # Needs to validate the delivery twice
+        delivery.move_ids.quantity = 5
+        delivery.button_validate()
+        self.assertEqual(delivery.move_ids.product_id, self.bom_1.bom_line_ids.product_id)
+        self.assertEqual(delivery.state, 'done')
+        product_aml = self.env['account.move.line'].search([('product_id', '=', self.dining_table.id)])
+        comp_aml = self.env['account.move.line'].search([('product_id', '=', self.screw.id)], order='debit')
+        self.assertEqual(len(product_aml), 0)
+        self.assertRecordValues(comp_aml, [
+            {'debit':  0.0, 'credit':  50.0},
+            {'debit':  50.0, 'credit':  0.0},
+        ])
+
+    def test_mo_overview_comp_different_uom(self):
+        """ Test that the overview takes into account the uom of the component in the price computation
+        """
+        self.screw.uom_id = self.env.ref('uom.product_uom_pack_6')
+        self.bom_1.bom_line_ids.filtered(lambda l: l.product_id == self.screw).product_uom_id = self.env.ref('uom.product_uom_unit')
+        mo = self._create_mo(self.bom_1, 1)
+        overview_values = self.env['report.mrp.report_mo_overview'].get_report_values(mo.id)
+        self.assertEqual(round(overview_values['data']['summary']['mo_cost'], 2), 677.08, "718.75 - 50 + 50/6")
+        mo.button_mark_done()
+        overview_values = self.env['report.mrp.report_mo_overview'].get_report_values(mo.id)
+        self.assertEqual(round(overview_values['data']['summary']['mo_cost'], 2), 677.08)
+
+    def test_mrp_user_without_account_permissions_can_create_bom(self):
+        mrp_user = new_test_user(self.env, 'temp_mrp_user', 'mrp.group_mrp_user')
+        mo_1 = self._create_mo(self.bom_1, 1)
+        mo_1.with_user(mrp_user).button_mark_done()
+
 
 class TestMrpAccountWorkorder(TestBomPriceOperationCommon):
 
@@ -198,7 +254,7 @@ class TestMrpAccountWorkorder(TestBomPriceOperationCommon):
         self.assertEqual(self.scrap_wood.standard_price, 30, "Initial price of the By-Product should be 30")
         # bom price is 871.25. Byproduct cost share is 12%+1% = 13% -> 113.26 for 8+12 units -> 5.66
         self.scrap_wood.button_bom_cost()
-        self.assertEqual(self.scrap_wood.standard_price, 5.66, "After computing price from BoM price should be 20.63")
+        self.assertAlmostEqual(self.scrap_wood.standard_price, 5.663125, "After computing price from BoM price should be 20.63")
 
     def test_wip_accounting_00(self):
         """ Test that posting a WIP accounting entry works as expected.
@@ -443,44 +499,65 @@ class TestMrpAccountWorkorder(TestBomPriceOperationCommon):
         mo.button_mark_done()
         self.assertEqual(mo.state, 'done')
 
-    def test_mo_overview_comp_different_uom(self):
-        """ Test that the overview takes into account the uom of the component in the price computation
-        """
-        product_chocolate = self.env['product.product'].create({
-            'name': 'Chocolate',
-            'is_storable': True,
-            'uom_id': self.env.ref('uom.product_uom_kgm').id,
-            'standard_price': 40,
-        })
-        self.env['stock.quant'].with_context(inventory_mode=True).create({
-            'product_id': product_chocolate.id,
-            'inventory_quantity': 20,
-            'location_id': self.env.ref('stock.stock_location_stock').id,
-        })
-        product_chococake = self.env['product.product'].create({
-            'name': 'Choco Cake',
-            'is_storable': True,
+    def test_labor_move_not_duplicated_when_backorder_always(self):
+        """Ensure labor accounting entry is not duplicated when create backorder is set to always."""
+        self.env.ref('base.group_user').implied_ids += self.env.ref('mrp.group_mrp_routings')
+
+        picking_type = self.env['stock.picking.type'].search([
+            ('code', '=', 'mrp_operation'),
+            ('company_id', '=', self.env.company.id),
+        ], limit=1)
+        self.assertTrue(picking_type, "Manufacturing operation type not found")
+        picking_type.create_backorder = 'always'
+
+        self.workcenter.costs_hour = 20
+
+        self.env['mrp.routing.workcenter'].create({
+            'name': 'work',
+            'bom_id': self.bom_1.id,
+            'workcenter_id': self.workcenter.id,
+            'time_cycle': 60,
+            'sequence': 1,
         })
 
-        self.env['mrp.bom'].create({
-            'product_id': product_chococake.id,
-            'product_tmpl_id': product_chococake.product_tmpl_id.id,
-            'product_uom_id': product_chococake.uom_id.id,
-            'product_qty': 1.0,
-            'type': 'normal',
-            'bom_line_ids': [
-                Command.create({'product_id': product_chocolate.id, 'product_qty': 100, 'product_uom_id': self.env.ref('uom.product_uom_gram').id}),
-            ],
-        })
-        mo = self.env['mrp.production'].create({
-            'name': 'MO',
-            'product_qty': 1.0,
-            'product_id': product_chococake.id,
-        })
+        production = self._create_mo(self.bom_1, 100)
+        production.action_confirm()
 
-        mo.action_confirm()
-        overview_values = self.env['report.mrp.report_mo_overview'].get_report_values(mo.id)
-        self.assertEqual(round(overview_values['data']['summary']['mo_cost'], 2), 4)
-        mo.button_mark_done()
-        overview_values = self.env['report.mrp.report_mo_overview'].get_report_values(mo.id)
-        self.assertEqual(round(overview_values['data']['summary']['mo_cost'], 2), 4)
+        workorder = production.workorder_ids
+        self.assertTrue(workorder, "Workorder should have been created")
+        workorder.duration = 1.0
+        workorder.time_ids.write({'duration': 1.0})
+
+        mo_form = Form(production)
+        mo_form.qty_producing = 50
+        production = mo_form.save()
+
+        production.move_raw_ids.picked = True
+        production._post_inventory()
+        production.button_mark_done()
+
+        labour_moves = self.env['account.move'].search([
+            ('ref', '=', f'{production.name} - Labour'),
+            ('state', '=', 'posted'),
+            ('company_id', '=', production.company_id.id),
+        ])
+        self.assertEqual(
+            len(labour_moves), 1,
+            "Labor entry should not be duplicated when backorder=always",
+        )
+
+    def test_mrp_user_with_timesheet_permissions_can_produce_mo(self):
+        """ Test that an MRP user with timesheet access but without accounting rights
+        can complete a Manufacturing Order when analytic distribution is applied,
+        ensuring timesheet rules do not block the process. """
+        if 'hr_timesheet' not in self.env["ir.module.module"]._installed():
+            self.skipTest('Timesheets is not installed')
+
+        mrp_user = new_test_user(self.env, 'temp_mrp_user', 'mrp.group_mrp_user, hr_timesheet.group_hr_timesheet_user')
+        analytic_plan = self.env['account.analytic.plan'].create({'name': 'Plan Test'})
+        wc_analytic_account = self.env['account.analytic.account'].create({'name': 'Analytic Account', 'plan_id': analytic_plan.id})
+        mo_1 = self._create_mo(self.bom_1, 1)
+
+        mo_1.workorder_ids[0].workcenter_id.analytic_distribution = {str(wc_analytic_account.id): 100.0}
+        mo_1.with_user(mrp_user).button_mark_done()
+        self.assertEqual(mo_1.state, 'done')

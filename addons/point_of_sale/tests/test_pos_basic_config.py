@@ -5,11 +5,13 @@ import odoo
 
 from odoo import fields
 from odoo.addons.point_of_sale.tests.common import TestPoSCommon
+from odoo.exceptions import ValidationError
 from freezegun import freeze_time
 from dateutil.relativedelta import relativedelta
 from datetime import datetime, timedelta
-from pprint import pformat
 import unittest.mock
+from odoo.http import UserError
+
 
 @odoo.tests.tagged('post_install', '-at_install')
 class TestPoSBasicConfig(TestPoSCommon):
@@ -823,16 +825,17 @@ class TestPoSBasicConfig(TestPoSCommon):
         order_data = self.create_ui_order_data([(self.product3, 1)])
         amount_paid = order_data['amount_paid']
         with (
-            self.assertLogs('odoo.addons.point_of_sale.models.pos_order', level='DEBUG') as cm,
+            self.assertLogs('odoo.addons.point_of_sale.models.pos_order') as cm,
             unittest.mock.patch('odoo.addons.point_of_sale.models.pos_order.randrange', return_value=1996)
         ):
+            self.env['ir.config_parameter'].sudo().set_param('point_of_sale.log_order_data', 'True')
             res = self.env['pos.order'].sync_from_ui([order_data])
             # Basic check for logs on order synchronization
             order_log_str = self.env['pos.order']._get_order_log_representation(order_data)
             odoo_order_id = res['pos.order'][0]['id']
             self.assertEqual(len(cm.output), 4)
             self.assertEqual(cm.output[0], f"INFO:odoo.addons.point_of_sale.models.pos_order:PoS synchronisation #1996 started for PoS orders references: [{order_log_str}]")
-            self.assertTrue(cm.output[1].startswith(f'DEBUG:odoo.addons.point_of_sale.models.pos_order:PoS synchronisation #1996 processing order {order_log_str} order full data: '))
+            self.assertTrue(cm.output[1].startswith(f'INFO:odoo.addons.point_of_sale.models.pos_order:PoS synchronisation #1996 processing order {order_log_str} order full data:'))
             self.assertEqual(cm.output[2], f'INFO:odoo.addons.point_of_sale.models.pos_order:PoS synchronisation #1996 order {order_log_str} created pos.order #{odoo_order_id}')
             self.assertEqual(cm.output[3], 'INFO:odoo.addons.point_of_sale.models.pos_order:PoS synchronisation #1996 finished')
             
@@ -926,6 +929,19 @@ class TestPoSBasicConfig(TestPoSCommon):
 
         # calling load_data should not raise an error
         self.pos_session.load_data([])
+
+    def test_load_data_picks_the_company_website_domain(self):
+        if self.env['ir.module.module']._get('website').state != 'installed':
+            self.skipTest("website module is required for this test")
+
+        company_website = self.config.company_id.website_id
+
+        if company_website:
+            company_website.write({'domain': 'https://custom.test.domain.com'})
+            self.open_new_session()
+            response = self.pos_session.load_data([])
+
+            self.assertEqual(response['pos.config'][0]['_base_url'], company_website.domain)
 
     def test_invoice_past_refund(self):
         """ Test invoicing a past refund
@@ -1449,3 +1465,37 @@ class TestPoSBasicConfig(TestPoSCommon):
         })
 
         self.assertEqual(refund_order.refunded_order_id, orders[0])
+
+    def test_cannot_archive_journal_linked_to_pos_payment_method(self):
+        """Test that archiving a journal linked to a POS payment method is blocked, and allowed when not linked."""
+
+        test_journal = self.env['account.journal'].create({
+            'name': 'Test POS Journal',
+            'type': 'cash',
+            'code': 'TPJ',
+            'company_id': self.env.company.id,
+        })
+        test_payment_method = self.env['pos.payment.method'].create({
+            'name': 'Test PM',
+            'journal_id': test_journal.id,
+            'receivable_account_id': self.cash_pm1.receivable_account_id.id,
+        })
+
+        with self.assertRaises(ValidationError):
+            test_journal.action_archive()
+
+        # Unlink the payment method and try again (should succeed)
+        test_payment_method.journal_id = False
+        test_journal.action_archive()
+        self.assertFalse(test_journal.active, "Journal should be archived when not linked to a POS payment method.")
+
+    def test_archive_delete_special_product(self):
+        special_product = self.env.ref('point_of_sale.product_product_tip')
+        with self.assertRaisesRegex(UserError, "You cannot archive a product that is set as a special product in a Point of Sale configuration. Please change the configuration first."):
+            special_product.action_archive()
+        with self.assertRaisesRegex(UserError, "You cannot archive a product that is set as a special product in a Point of Sale configuration. Please change the configuration first."):
+            special_product.product_variant_ids[0].action_archive()
+        with self.assertRaisesRegex(UserError, "You cannot archive a product that is set as a special product in a Point of Sale configuration. Please change the configuration first."):
+            special_product.unlink()
+        with self.assertRaisesRegex(UserError, "You cannot archive a product that is set as a special product in a Point of Sale configuration. Please change the configuration first."):
+            special_product.product_variant_ids[0].unlink()

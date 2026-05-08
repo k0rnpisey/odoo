@@ -15,7 +15,7 @@ import { contains, onRpc } from "@web/../tests/web_test_helpers";
 import { setupEditor, testEditor } from "../_helpers/editor";
 import { cleanLinkArtifacts, unformat } from "../_helpers/format";
 import { getContent, setSelection } from "../_helpers/selection";
-import { insertText } from "../_helpers/user_actions";
+import { deleteBackward, insertText } from "../_helpers/user_actions";
 
 describe("button style", () => {
     test("editable button should have cursor text", async () => {
@@ -111,6 +111,22 @@ describe("button style", () => {
                 </div>
             `),
         });
+    });
+
+    test("backspace on button should not remove editor", async () => {
+        const { el, editor } = await setupEditor(
+            '<p><a href="https://test.com/" class="btn btn-lg btn-primary">#</a>[]</p>'
+        );
+        expect(getContent(el)).toBe(
+            `<p>\ufeff<a href="https://test.com/" class="btn btn-lg btn-primary">\ufeff#\ufeff</a>\ufeff[]</p>`
+        );
+        deleteBackward(editor);
+        deleteBackward(editor);
+        deleteBackward(editor);
+        expect(getContent(el)).toBe(
+            `<p o-we-hint-text='Type "/" for commands' class="o-we-hint">[]<br></p>`
+        );
+        expect(editor.editable.isConnected).toBe(true);
     });
 });
 
@@ -423,5 +439,16 @@ test("button should never contain selection placeholder", async () => {
             '<button style="display: block" contenteditable="true"><div style="display: block" contenteditable="false">a</div></button>',
         contentBeforeEdit:
             '<button style="display: block" contenteditable="true"><div style="display: block" contenteditable="false">a</div></button>',
+    });
+});
+
+test.tags("firefox");
+describe("firefox", () => {
+    test("text should be inserted inside link after backspace", async () => {
+        const { el, editor } = await setupEditor('<p><a href="#">link</a>t[]est</p>');
+        deleteBackward(editor);
+        deleteBackward(editor);
+        await insertText(editor, "X");
+        expect(cleanLinkArtifacts(getContent(el))).toBe('<p><a href="#">linX[]</a>est</p>');
     });
 });

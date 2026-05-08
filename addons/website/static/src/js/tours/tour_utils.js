@@ -430,7 +430,7 @@ export function insertSnippet(snippet, { position = "bottom", ignoreLoading = fa
 
     if (!ignoreLoading) {
         insertSnippetSteps.push({
-            trigger: ":iframe:not(:has(.o_loading_screen))",
+            trigger: ".o_website_preview :iframe:not(:has(.o_loading_screen))",
         });
     }
 
@@ -513,7 +513,14 @@ export function clickOnExtraMenuItem(stepOptions, backend = false) {
                 const extraMenuButton = this.anchor.querySelector(".o_extra_menu_items a.nav-link");
                 // Don't click on the extra menu button if it's already visible.
                 if (extraMenuButton && !extraMenuButton.classList.contains("show")) {
+                    const dropdownFullyOpen = Promise.withResolvers();
+                    extraMenuButton.addEventListener(
+                        "shown.bs.dropdown",
+                        dropdownFullyOpen.resolve,
+                        { once: true }
+                    );
                     await actions.click(extraMenuButton);
+                    await dropdownFullyOpen.promise;
                 }
             },
         },
@@ -729,6 +736,12 @@ export function selectFullText(elementName, selector) {
             range.selectNodeContents(this.anchor);
             selection.removeAllRanges();
             selection.addRange(range);
+            this.anchor.closest(".odoo-editor-editable").dispatchEvent(
+                new MouseEvent("pointerup", {
+                    bubbles: true,
+                    cancelable: true,
+                })
+            );
         },
     };
 }

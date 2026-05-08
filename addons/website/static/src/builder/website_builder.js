@@ -9,13 +9,17 @@ import { TranslateSetupEditorPlugin } from "./plugins/translate_setup_editor_plu
 import { VisibilityPlugin } from "@html_builder/core/visibility_plugin";
 import { removePlugins } from "@html_builder/utils/utils";
 import { closestElement } from "@html_editor/utils/dom_traversal";
-import { Component, onWillStart } from "@odoo/owl";
+import { Component, onMounted, onWillStart } from "@odoo/owl";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { useSetupAction } from "@web/search/action_hook";
 import { HighlightPlugin } from "./plugins/highlight/highlight_plugin";
+import { RepeatTranslationStatePlugin } from "./plugins/translation/repeat_translation_state_plugin";
+import { BadgeTranslationPlugin } from "./plugins/translation/badge_translation_plugin";
+import { ButtonTranslationPlugin } from "./plugins/options/button_option_plugin";
+import { NavTabsTranslationPlugin } from "./plugins/options/navtabs_style_option_plugin";
 import { PopupVisibilityPlugin } from "./plugins/popup_visibility_plugin";
 import { SaveTranslationPlugin } from "./plugins/save_translation_plugin";
 import { TranslateAnnouncementScrollPlugin } from "./plugins/translate_announcement_scroll_plugin";
@@ -46,6 +50,12 @@ import { CustomizeTranslationTabPlugin } from "./plugins/translation_tab/customi
 import { Plugin } from "@html_editor/plugin";
 import { revertPreview } from "@html_builder/core/utils";
 import { rpc } from "@web/core/network/rpc";
+import { redirect } from "@web/core/utils/urls";
+import { browser } from "@web/core/browser/browser";
+import {
+    localStorageNoDialogKey,
+    TranslatorInfoDialog,
+} from "./translation_components/translatorInfoDialog";
 
 const TRANSLATION_PLUGINS = [
     BuilderOptionsTranslationPlugin,
@@ -66,6 +76,10 @@ const TRANSLATION_PLUGINS = [
     WebsiteVisibilityPlugin,
     AnimateOptionPlugin,
     HighlightPlugin,
+    RepeatTranslationStatePlugin,
+    BadgeTranslationPlugin,
+    ButtonTranslationPlugin,
+    NavTabsTranslationPlugin,
     OperationPlugin,
     EditInteractionPlugin,
     TranslateTableOfContentOptionPlugin,
@@ -98,6 +112,8 @@ export class WebsiteBuilder extends Component {
     setup() {
         this.websiteService = useService("website");
         this.dialog = useService("dialog");
+        this.websiteEditService =
+            this.websiteService.websiteRootInstance?.bindService("website_edit");
         useSetupAction({
             beforeUnload: (ev) => this.onBeforeUnload(ev),
             beforeLeave: () => this.onBeforeLeave(),
@@ -106,6 +122,12 @@ export class WebsiteBuilder extends Component {
             this.translatedElements = this.props.translation
                 ? await rpc("/website/get_translated_elements")
                 : [];
+        });
+        onMounted(() => {
+            if (this.props.translation && !browser.localStorage.getItem(localStorageNoDialogKey)) {
+                this.dialog.add(TranslatorInfoDialog);
+            }
+            this.websiteEditService?.clearRpcCache();
         });
     }
 
@@ -125,6 +147,7 @@ export class WebsiteBuilder extends Component {
         } else {
             this.props.builderProps.closeEditor();
         }
+        this.reloadAfterTimeout();
     }
 
     onBeforeUnload(event) {
@@ -159,15 +182,43 @@ export class WebsiteBuilder extends Component {
         return true;
     }
 
+    reloadAfterTimeout() {
+        if (this.editor.shared.operation.hasTimedOut()) {
+            const currentUrl = new URL(window.location.href);
+            // A timed-out operation might still be running; reload the page to avoid side effects
+            redirect(`/@${currentUrl.pathname}`);
+        }
+    }
+
     async save() {
+        if (this.editor.shared.operation.hasTimedOut()) {
+            const shouldContinue = await new Promise((resolve) => {
+                this.dialog.add(ConfirmationDialog, {
+                    title: _t("Corrupted content"),
+                    body: _t(
+                        "This page may be corrupted if you save these changes. Are you sure you want to continue?"
+                    ),
+                    confirmLabel: _t("Save anyway"),
+                    confirmClass: "btn-danger",
+                    confirm: () => resolve(true),
+                    cancel: () => resolve(false),
+                    dismiss: () => resolve(false),
+                });
+            });
+            if (!shouldContinue) {
+                return;
+            }
+        }
+
         // TODO: handle the urgent save and the fail of the save operation
         await this.editor.shared.operation.next(
             async () => {
                 await this.editor.shared.savePlugin.save();
                 this.props.builderProps.closeEditor();
             },
-            { withLoadingEffect: false }
+            { withLoadingEffect: false, canTimeout: false }
         );
+        this.reloadAfterTimeout();
     }
 
     get builderProps() {

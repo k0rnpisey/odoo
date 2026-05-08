@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-from datetime import timedelta
 from freezegun import freeze_time
 
 from odoo.addons.stock_account.tests.common import TestStockValuationCommon
@@ -13,7 +12,8 @@ from odoo import fields, Command
 class TestAccountMove(TestStockValuationCommon):
     def test_standard_perpetual_01_mc_01(self):
         product = self.product_standard_auto
-        rate = self.other_currency.rate_ids.sorted()[0].rate
+        self._use_multi_currencies([('2017-01-01', 2.0)])
+        rate = self.other_currency.rate_ids.rate
 
         move_form = Form(self.env["account.move"].with_context(default_move_type="out_invoice"))
         move_form.partner_id = self.partner
@@ -37,7 +37,8 @@ class TestAccountMove(TestStockValuationCommon):
 
     def test_fifo_perpetual_01_mc_01(self):
         product = self.product_fifo_auto
-        rate = self.other_currency.rate_ids.sorted()[0].rate
+        self._use_multi_currencies([('2017-01-01', 2.0)])
+        rate = self.other_currency.rate_ids.rate
 
         move_form = Form(self.env["account.move"].with_context(default_move_type="out_invoice"))
         move_form.partner_id = self.partner
@@ -60,7 +61,8 @@ class TestAccountMove(TestStockValuationCommon):
 
     def test_average_perpetual_01_mc_01(self):
         product = self.product_avco_auto
-        rate = self.other_currency.rate_ids.sorted()[0].rate
+        self._use_multi_currencies([('2017-01-01', 2.0)])
+        rate = self.other_currency.rate_ids.rate
 
         move_form = Form(self.env["account.move"].with_context(default_move_type="out_invoice"))
         move_form.partner_id = self.partner
@@ -86,6 +88,8 @@ class TestAccountMove(TestStockValuationCommon):
         """Storno accounting uses negative numbers on debit/credit to cancel other moves.
         This test checks that we do the same for the anglosaxon lines when storno is enabled.
         """
+        self._use_multi_currencies([('2017-01-01', 2.0)])
+
         product = self.product_standard_auto
         self.env.company.account_storno = True
         self.env.company.anglo_saxon_accounting = True
@@ -197,6 +201,57 @@ class TestAccountMove(TestStockValuationCommon):
         cogs_line = move.line_ids.filtered(lambda l: l.account_id == product._get_product_accounts()['expense'])
         self.assertEqual(cogs_line.analytic_distribution, {str(analytic_account.id): 100})
 
+    def test_stock_picking_applies_analytic_distribution_to_journal_entry(self):
+        """
+        Check analytic distribution is correctly propagated to journal entry
+        while validating a picking related to a partner
+        """
+        self.env.user.group_ids += self.env.ref('analytic.group_analytic_accounting')
+        product = self.product_standard_auto
+        cost_of_production = self.env['account.account'].create({
+            'name': 'STCK Test Account',
+            'code': '100119',
+            'reconcile': True,
+            'account_type': 'asset_current',
+        })
+        default_plan = self.env['account.analytic.plan'].create({
+            'name': 'Default',
+        })
+        analytic_account = self.env['account.analytic.account'].create({
+            'name': 'Account 1',
+            'plan_id': default_plan.id,
+            'company_id': False,
+        })
+        self.env['account.analytic.distribution.model'].create({
+            'analytic_distribution': {analytic_account.id: 100},
+            'product_id': product.id,
+            'company_id': self.company.id,
+            'partner_id': self.partner.id,
+        })
+        self.stock_location.valuation_account_id = cost_of_production.id
+
+        receipt = self.env['stock.picking'].create([
+            {
+                'location_id': self.supplier_location.id,
+                'location_dest_id': self.stock_location.id,
+                'picking_type_id': self.picking_type_in.id,
+                'partner_id': self.partner.id,
+                'move_ids': [Command.create({
+                    'product_id': product.id,
+                    'location_id': self.supplier_location.id,
+                    'location_dest_id': self.stock_location.id,
+                    'product_uom_qty': 1.0,
+                })],
+            },
+        ])
+        receipt.button_validate()
+
+        aml = self.env['account.move.line'].search([('product_id', '=', product.id)], order='debit')
+        self.assertRecordValues(aml, [
+            {'analytic_distribution': {str(analytic_account.id): 100}, 'credit': 10, 'debit': 0},
+            {'analytic_distribution': {str(analytic_account.id): 100}, 'credit': 0, 'debit': 10},
+        ])
+
     def test_cogs_account_branch_company(self):
         """Check branch company accounts are selected"""
         product = self.product_standard_auto
@@ -213,6 +268,7 @@ class TestAccountMove(TestStockValuationCommon):
         bill = self.env['account.move'].with_company(branch.id).with_context(default_move_type='in_invoice').create({
             'partner_id': self.partner.id,
             'invoice_date': fields.Date.today(),
+            'company_id': branch.id,
             'invoice_line_ids': [
                 Command.create({
                     'product_id': product.id,
@@ -296,8 +352,8 @@ class TestAccountMove(TestStockValuationCommon):
         # Receipts can not be backdated prior to lock date
         receipt.scheduled_date = post_to_lock_date
         receipt_done.date_done = post_to_lock_date
-        with self.assertRaises(UserError):
-            receipt.scheduled_date = prior_to_lock_date
+        # Lock dates should not affect un-validated scheduled_date
+        receipt.scheduled_date = prior_to_lock_date
         with self.assertRaises(UserError):
             receipt_done.date_done = prior_to_lock_date
 
@@ -309,47 +365,10 @@ class TestAccountMove(TestStockValuationCommon):
         # Receipts can not be backdated prior to lock date
         receipt.scheduled_date = post_to_lock_date
         receipt_done.date_done = post_to_lock_date
-        with self.assertRaises(UserError):
-            receipt.scheduled_date = prior_to_lock_date
+        # Lock dates should not affect un-validated scheduled_date
+        receipt.scheduled_date = prior_to_lock_date
         with self.assertRaises(UserError):
             receipt_done.date_done = prior_to_lock_date
-
-    def test_closing_same_day(self):
-        product = self.product_avco
-        product.standard_price = 10.0
-        self._use_inventory_location_accounting()
-        with freeze_time(fields.Datetime.now() - timedelta(seconds=10)):
-            self._make_in_move(product, 10, location_id=self.inventory_location.id)
-            mail_context = {
-                'tracking_disable': False,
-                'mail_create_nolog': False,
-                'mail_create_nosubscribe': False,
-                'mail_notrack': False,
-            }
-            action = self.company.with_context(mail_context).action_close_stock_valuation()
-            closing = self.env['account.move'].with_context(mail_context).browse(action['res_id'])
-            # First flush to clean precommit data
-            self.env.cr.flush()
-            closing._post()
-            # Second flush to post the tracking values
-            self.env.cr.flush()
-            # Update the tracking value create_date since it used the cursor one and not the frozen time
-            am_state_field = self.env['ir.model.fields'].search(
-                [('model', '=', 'account.move'), ('name', '=', 'state')], limit=1)
-            state_tracking = closing.message_ids.tracking_value_ids.filtered(
-                lambda t: t.field_id == am_state_field)
-            state_tracking.create_date = fields.Datetime.now()
-            self.assertRecordValues(closing.line_ids, [
-                {'account_id': self.account_inventory.id, 'debit': 0.0, 'credit': 100.0},
-                {'account_id': self.account_stock_valuation.id, 'debit': 100.0, 'credit': 0.0},
-            ])
-
-        self._make_in_move(product, 10, location_id=self.inventory_location.id)
-        closing = self._close()
-        self.assertRecordValues(closing.line_ids, [
-            {'account_id': self.account_inventory.id, 'debit': 0.0, 'credit': 100.0},
-            {'account_id': self.account_stock_valuation.id, 'debit': 100.0, 'credit': 0.0},
-        ])
 
     def test_invoice_with_journal_item_without_label(self):
         """Test posting an invoice whose invoice lines have no label.

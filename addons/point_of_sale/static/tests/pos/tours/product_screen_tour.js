@@ -29,6 +29,9 @@ registry.category("web_tour.tours").add("ProductScreenTour", {
             Chrome.startPoS(),
             Dialog.confirm("Open Register"),
             OfflineUtil.setOfflineMode(),
+            // ensure that even after refreshing the page while being offline all data is correctly reloaded
+            refresh(),
+            Dialog.confirm("Continue with limited functionality"),
             ProductScreen.firstProductIsFavorite("Whiteboard Pen"),
             // Make sure we don't have any scroll bar on the product list
             {
@@ -585,21 +588,25 @@ registry.category("web_tour.tours").add("PosCategoriesOrder", {
         [
             Chrome.startPoS(),
             Dialog.confirm("Open Register"),
+            {
+                content: "category selector keeps category-list styling",
+                trigger: ".category-list",
+            },
             ProductScreen.verifyCategorySequence(["AAA", "AAB", "AAC"]),
             {
-                trigger: '.category-button:eq(1) > span:contains("AAB")',
+                trigger: '.category-button:eq(1) > div span:contains("AAB")',
                 run: "click",
             },
             ProductScreen.productIsDisplayed("Product in AAB and AAX", 0),
             {
-                trigger: '.category-button:eq(-1) > span:contains("AAX")',
+                trigger: '.category-button:eq(-1) > div span:contains("AAX")',
             },
             {
-                trigger: '.category-button:eq(-1) > span:contains("AAX")',
+                trigger: '.category-button:eq(-1) > div span:contains("AAX")',
                 run: "click",
             },
             {
-                trigger: '.category-button:eq(-1) > span:contains("AAY")',
+                trigger: '.category-button:eq(-1) > div span:contains("AAY")',
             },
         ].flat(),
 });
@@ -874,7 +881,7 @@ registry.category("web_tour.tours").add("test_draft_orders_not_syncing", {
             ProductScreen.orderIsEmpty(),
             ProductScreen.clickDisplayedProduct("Desk Pad"),
             ProductScreen.clickPartnerButton(),
-            ProductScreen.clickCustomer("Deco Addict"),
+            ProductScreen.clickCustomer("Acme Corporation"),
             Chrome.createFloatingOrder(),
             ProductScreen.clickDisplayedProduct("Desk Pad"),
             ProductScreen.clickPayButton(),
@@ -891,21 +898,25 @@ registry.category("web_tour.tours").add("test_fiscal_position_tax_group_labels",
             Chrome.startPoS(),
             Dialog.confirm("Open Register"),
             ProductScreen.clickDisplayedProduct("Test Product"),
-            ProductScreen.totalAmountIs("100.00"),
-            ProductScreen.clickFiscalPosition("Fiscal Position Test"),
-            ProductScreen.totalAmountIs("100.00"),
+            ProductScreen.totalAmountIs("115.00"),
             ProductScreen.clickPayButton(),
             PaymentScreen.clickPaymentMethod("Bank", true, { remaining: "0.00" }),
             PaymentScreen.clickValidate(),
             ReceiptScreen.isShown(),
-            {
-                content: "Make sure orderline tax label is correct",
-                trigger: ".orderline:contains('Tax Group 2')",
-            },
-            {
-                content: "Make sure receipt tax label is correct and correspond to the orderline",
-                trigger: ".pos-receipt-taxes:contains('Tax Group 2')",
-            },
+            ReceiptScreen.checkOrderlineTaxGroupLabel("Tax Group 1"),
+            ReceiptScreen.checkTaxSummaryTaxGroupLabel("Tax Group 1"),
+            ReceiptScreen.clickNextOrder(),
+            ProductScreen.clickDisplayedProduct("Test Product"),
+            ProductScreen.totalAmountIs("115.00"),
+            ProductScreen.clickFiscalPosition("Fiscal Position Test"),
+            ProductScreen.totalAmountIs("105.00"),
+            ProductScreen.clickPayButton(),
+            PaymentScreen.clickPaymentMethod("Bank", true, { remaining: "0.00" }),
+            PaymentScreen.clickValidate(),
+            ReceiptScreen.isShown(),
+            ReceiptScreen.checkOrderlineTaxGroupLabel("Tax Group 2"),
+            ReceiptScreen.checkTaxSummaryTaxGroupLabel("Tax Group 2"),
+            ReceiptScreen.clickNextOrder(),
         ].flat(),
 });
 
@@ -932,6 +943,14 @@ registry.category("web_tour.tours").add("test_product_long_press", {
             Dialog.confirm("Open Register"),
             ProductScreen.longPressProduct("Test Product"),
             Dialog.is(),
+            {
+                content: "Check that VAT label is present in the product details popup",
+                trigger: ".section-financials .vat-label:contains('VAT')",
+            },
+            {
+                content: "Check that VAT value is correct in the product details popup",
+                trigger: ".section-financials .vat-value:contains('$ 15.00 (Parent Tax)')",
+            },
             Chrome.endTour(),
         ].flat(),
 });
@@ -1043,10 +1062,10 @@ registry.category("web_tour.tours").add("test_preset_timing_retail", {
             Chrome.createFloatingOrder(),
             ProductScreen.clickDisplayedProduct("Desk Organizer"),
             Chrome.clickOrders(),
-            TicketScreen.nthRowContains(1, "A simple PoS man!"),
-            TicketScreen.nthRowContains(1, "Delivery", false),
-            TicketScreen.nthRowContains(2, "002"),
-            TicketScreen.nthRowContains(2, "Dine in", false),
+            TicketScreen.nthRowContains(2, "A simple PoS man!"),
+            TicketScreen.nthRowContains(2, "Delivery", false),
+            TicketScreen.nthRowContains(1, "002"),
+            TicketScreen.nthRowContains(1, "Dine in", false),
         ].flat(),
 });
 
@@ -1210,9 +1229,11 @@ registry.category("web_tour.tours").add("test_preset_customer_selection", {
         [
             Chrome.startPoS(),
             Dialog.confirm("Open Register"),
-            PartnerList.searchCustomerValue("Test Partner", true),
-            PartnerList.clickPartner("Test Partner"),
-            ProductScreen.customerIsSelected("Test Partner"),
+            PartnerList.searchCustomerValue("Partner Full", true),
+            PartnerList.clickPartner("Partner Full"),
+            ProductScreen.customerIsSelected("Partner Full"),
+            Chrome.clickOrders(),
+            TicketScreen.checkCustomerAddress("77 Santa Barbara Rd Pleasant Hill"),
             Chrome.endTour(),
         ].flat(),
 });

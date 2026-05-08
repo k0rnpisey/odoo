@@ -138,6 +138,18 @@ class ReportPoint_Of_SaleReport_Saledetails(models.AbstractModel):
             for session in sessions:
                 configs.append(session.config_id)
 
+        cash_rounding_total = 0.0
+        for order in orders:
+            order_currency = order.session_id.currency_id
+            rounding_diff = order.amount_paid - order.amount_total
+            if user_currency != order_currency:
+                cash_rounding_total += order_currency._convert(
+                    rounding_diff, user_currency, order.company_id,
+                    order.date_order or fields.Date.today())
+            else:
+                cash_rounding_total += rounding_diff
+        cash_rounding_total = user_currency.round(cash_rounding_total)
+
         for payment in payments:
             payment['count'] = False
 
@@ -223,7 +235,7 @@ class ReportPoint_Of_SaleReport_Saledetails(models.AbstractModel):
                     })
 
                 # If there is a cash difference, we remove the last cash move which is the cash difference
-                if cash_difference != 0:
+                if session.currency_id.round(cash_difference) != 0:
                     cash_moves = cash_moves[:-1]
 
                 for cash_move in cash_moves:
@@ -291,12 +303,13 @@ class ReportPoint_Of_SaleReport_Saledetails(models.AbstractModel):
             'precision': user_currency.decimal_places,
         }
 
+        order_sessions = orders.mapped('session_id')
         session_name = False
-        if len(sessions) == 1:
-            state = sessions[0].state
-            date_start = sessions[0].start_at
-            date_stop = sessions[0].stop_at
-            session_name = sessions[0].name
+        if len(order_sessions) == 1:
+            state = order_sessions[0].state
+            date_start = order_sessions[0].start_at
+            date_stop = order_sessions[0].stop_at
+            session_name = order_sessions[0].name
         else:
             state = "multiple"
 
@@ -358,6 +371,7 @@ class ReportPoint_Of_SaleReport_Saledetails(models.AbstractModel):
             'total_paid': totalPaymentsAmount,
             'payments_per_method': payments_per_method.values(),
             'show_payment_per_method': not session_ids,
+            'cash_rounding_total': cash_rounding_total,
         }
 
     def _get_product_total_amount(self, line):
@@ -387,7 +401,7 @@ class ReportPoint_Of_SaleReport_Saledetails(models.AbstractModel):
                 base_amounts[tax['id']] = tax['base']
 
             for tax_id, base_amount in base_amounts.items():
-                taxes['taxes'][tax_id]['base_amount'] += base_amount
+                taxes['taxes'][tax_id]['base_amount'] += currency.round(base_amount)
         else:
             taxes['taxes'].setdefault(0, {'name': _('No Taxes'), 'tax_amount': 0.0, 'base_amount': 0.0})
             taxes['taxes'][0]['base_amount'] += line.price_subtotal_incl
@@ -399,14 +413,16 @@ class ReportPoint_Of_SaleReport_Saledetails(models.AbstractModel):
     def _get_total_and_qty_per_category(self, categories):
         all_qty = 0
         all_total = 0
+        qty_precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        price_precision = self.env['decimal.precision'].precision_get('Product Price')
         for category_dict in categories:
             qty_cat = 0
             total_cat = 0
             for product in category_dict['products']:
                 qty_cat += product['quantity']
                 total_cat += product['base_amount']
-            category_dict['total'] = total_cat
-            category_dict['qty'] = qty_cat
+            category_dict['total'] = round(total_cat, price_precision)
+            category_dict['qty'] = round(qty_cat, qty_precision)
         # IMPROVEMENT: It would be better if the `products` are grouped by pos.order.line.id.
         unique_products = list({tuple(sorted(product.items())): product for category in categories for product in category['products']}.values())
         all_qty = sum([product['quantity'] for product in unique_products])

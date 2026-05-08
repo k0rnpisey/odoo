@@ -70,8 +70,6 @@ import { MultiCurrencyPopover } from "@web/views/view_components/multi_currency_
 
 const formatters = registry.category("formatters");
 
-const DEFAULT_GROUP_PAGER_COLSPAN = 1;
-
 const FIELD_CLASSES = {
     char: "o_list_char",
     float: "o_list_number",
@@ -736,7 +734,7 @@ export class ListRenderer extends Component {
                     } else {
                         currencyId = values[0][currencyField] && values[0][currencyField].id;
                     }
-                    if (func) {
+                    if (func && type === "monetary") {
                         const currencies = this.getFieldCurrencies(fieldName);
                         // in case of multiple currencies, convert values into default currency using conversion rates
                         if (currencies.size > 1) {
@@ -1138,38 +1136,28 @@ export class ListRenderer extends Component {
         // if there are aggregates, the first th spans until the first
         // aggregate column then all cells between aggregates are rendered
         const firstAggregateIndex = this.getFirstAggregateIndex(group);
-        let colspan;
-        if (firstAggregateIndex > -1) {
-            colspan = firstAggregateIndex;
-        } else {
-            colspan = Math.max(1, this.columns.length - DEFAULT_GROUP_PAGER_COLSPAN);
-        }
+        let colspan = firstAggregateIndex > -1 ? firstAggregateIndex : this.columns.length;
         if (this.hasSelectors) {
             colspan++;
         }
         return colspan;
     }
 
+    // TODO: rename in master
     getGroupPagerCellColspan(group) {
-        const lastAggregateIndex = this.getLastAggregateIndex(group);
-        let colspan;
-        if (lastAggregateIndex > -1) {
-            colspan = this.columns.length - lastAggregateIndex - 1;
-        } else {
-            colspan = this.columns.length > 1 ? DEFAULT_GROUP_PAGER_COLSPAN : 0;
-        }
-        if (this.hasOpenFormViewColumn) {
-            colspan++;
-        }
-        return colspan;
+        // this colspan is the number of columns after the last column with aggregates
+        const lastIndex = this.getLastAggregateIndex(group);
+        return lastIndex > -1 ? this.columns.length - lastIndex - 1 : 0;
     }
 
     getGroupPagerProps(group) {
         const list = group.list;
+        // For a single leveled group with a countLimit, we already have the full count.
+        const total = list.isGrouped ? list.count : group.count;
         return {
             offset: list.offset,
             limit: list.limit,
-            total: list.count,
+            total,
             onUpdate: async ({ offset, limit }) => {
                 await list.load({ limit, offset });
                 this.render(true);
@@ -1432,6 +1420,9 @@ export class ListRenderer extends Component {
         }
 
         const closestCell = ev.target.closest("td, th");
+        if (closestCell.querySelector(".o_select_menu [aria-expanded=true]")) {
+            return;
+        }
 
         if (this.toggleFocusInsideCell(hotkey, closestCell)) {
             return;
@@ -1716,9 +1707,13 @@ export class ListRenderer extends Component {
      * @returns {boolean} true if some behavior has been taken
      */
     onCellKeydownEditMode(hotkey, cell, group, record) {
+        if (!record) {
+            return false;
+        }
+
         const { cycleOnTab, list } = this.props;
         const row = cell.parentElement;
-        const applyMultiEditBehavior = record && record.selected && list.model.multiEdit;
+        const applyMultiEditBehavior = record.selected && list.model.multiEdit;
         const isDirty = record.dirty || this.lastIsDirty;
         const topReCreate = this.props.editable === "top" && record.isNew;
 

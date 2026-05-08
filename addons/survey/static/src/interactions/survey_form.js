@@ -17,7 +17,7 @@ import { Interaction } from "@web/public/interaction";
 import { redirect } from "@web/core/utils/urls";
 import { scrollTo } from "@web/core/utils/scrolling";
 
-import SurveyPreloadImageMixin from "@survey/js/survey_preload_image_mixin";
+import { preloadBackground } from "@survey/js/survey_preload_image_mixin";
 import { fadeIn, fadeOut } from "@survey/utils";
 
 const { DateTime } = luxon;
@@ -423,8 +423,6 @@ export class SurveyForm extends Interaction {
                 },
                 cancel: () => {},
             });
-        } else if (targetEl.value === "finish") {
-            this.submitForm({ isFinish: true });
         } else {
             this.submitForm();
         }
@@ -621,7 +619,7 @@ export class SurveyForm extends Interaction {
             const [, result] = await nextScreenPromise;
             this.nextScreenResult = result;
             if (this.options.refreshBackground && result.background_image_url) {
-                return SurveyPreloadImageMixin._preloadBackground(result.background_image_url);
+                return preloadBackground(result.background_image_url);
             } else {
                 return Promise.resolve();
             }

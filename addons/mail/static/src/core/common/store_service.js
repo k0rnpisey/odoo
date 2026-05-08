@@ -1,6 +1,11 @@
 import { Store as BaseStore, fields, makeStore, storeInsertFns } from "@mail/core/common/record";
 import { threadCompareRegistry } from "@mail/core/common/thread_compare";
-import { cleanTerm, generateEmojisOnHtml, prettifyMessageText } from "@mail/utils/common/format";
+import {
+    attClassObjectToString,
+    cleanTerm,
+    generateEmojisOnHtml,
+    prettifyMessageText,
+} from "@mail/utils/common/format";
 import { compareDatetime } from "@mail/utils/common/misc";
 
 import { reactive } from "@odoo/owl";
@@ -19,6 +24,7 @@ import { patch } from "@web/core/utils/patch";
 import { isMobileOS } from "@web/core/browser/feature_detection";
 import { getOrigin } from "@web/core/utils/urls";
 import { cookie } from "@web/core/browser/cookie";
+import { isMarkup, createDocumentFragmentFromContent } from "@web/core/utils/html";
 
 /**
  * @typedef {{isSpecial: boolean, channel_types: string[], label: string, displayName: string, description: string}} SpecialMention
@@ -211,11 +217,12 @@ export class Store extends BaseStore {
     }
 
     discussDropdownMenuClass(ctx) {
-        const res = ["o-discuss-dropdownMenu", "d-flex", "flex-column", "border-secondary"];
-        if (this.shouldSimulateDarkTheme(ctx)) {
-            res.push("o-simulateDarkTheme");
-        }
-        return res.join(" ");
+        const simulateDarkTheme = this.shouldSimulateDarkTheme(ctx);
+        return attClassObjectToString({
+            "o-discuss-dropdownMenu d-flex flex-column border-secondary": true,
+            "o-simulateDarkTheme": simulateDarkTheme,
+            "bg-view": !simulateDarkTheme,
+        });
     }
 
     standaloneInboxMessages = fields.Many("mail.message", {
@@ -449,6 +456,25 @@ export class Store extends BaseStore {
                 ev.preventDefault();
                 return true;
             }
+        } else if (
+            this.env.services.ui.isSmall &&
+            ev.target.closest(".o-mail-ChatWindow") &&
+            link.href &&
+            !link.href.startsWith("#")
+        ) {
+            let url;
+            try {
+                url = new URL(link.href);
+            } catch {
+                // Ignore invalid URLs
+                return false;
+            }
+            if (
+                browser.location.host === url.host &&
+                browser.location.pathname.startsWith("/odoo")
+            ) {
+                this.ChatWindow.get({ thread })?.fold();
+            }
         }
         return false;
     }
@@ -563,20 +589,28 @@ export class Store extends BaseStore {
         { mentionedChannels = [], mentionedPartners = [], mentionedRoles = [], thread } = {}
     ) {
         const validMentions = {};
+        const segments = isMarkup(body)
+            ? Array.from(
+                  createDocumentFragmentFromContent(body).querySelectorAll("a"),
+                  (a) => a.textContent
+              )
+            : [body];
         validMentions.threads = mentionedChannels.filter((thread) => {
-            if (thread.parent_channel_id) {
-                return body.includes(
-                    `#${thread.parent_channel_id.displayName} > ${thread.displayName}`
-                );
-            }
-            return body.includes(`#${thread.displayName}`);
+            const mention = thread.parent_channel_id
+                ? `#${thread.parent_channel_id.displayName} > ${thread.displayName}`
+                : `#${thread.displayName}`;
+            return segments.some((segment) => segment.includes(mention));
         });
         validMentions.partners = mentionedPartners.filter((partner) =>
-            body.includes(`@${thread?.getPersonaName(partner) ?? partner.name}`)
+            segments.some((segment) =>
+                segment.includes(`@${thread?.getPersonaName?.(partner) ?? partner.name}`)
+            )
         );
-        validMentions.roles = mentionedRoles.filter((role) => body.includes(`@${role.name}`));
+        validMentions.roles = mentionedRoles.filter((role) =>
+            segments.some((segment) => segment.includes(`@${role.name}`))
+        );
         validMentions.specialMentions = this.specialMentions
-            .filter((special) => body.includes(`@${special.label}`))
+            .filter((special) => segments.some((segment) => segment.includes(`@${special.label}`)))
             .map((special) => special.label);
         return validMentions;
     }
@@ -653,6 +687,12 @@ export class Store extends BaseStore {
             params.canned_response_ids = cannedResponseIds;
         }
         return params;
+    }
+
+    notifySendFromMailbox(recordName) {
+        this.env.services.notification.add(_t('Message posted on "%s"', recordName), {
+            type: "info",
+        });
     }
 
     getNextTemporaryId() {

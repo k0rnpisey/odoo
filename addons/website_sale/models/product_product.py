@@ -164,7 +164,7 @@ class ProductProduct(models.Model):
         self.ensure_one()
 
         product_price = request.pricelist._get_product_price(
-            self, quantity=1, target_currency=website.currency_id
+            self, quantity=1, currency=website.currency_id
         )
         # Use sudo to access cross-company taxes.
         product_taxes_sudo = self.sudo().taxes_id._filter_taxes_by_company(self.env.company)
@@ -195,6 +195,8 @@ class ProductProduct(models.Model):
                 'ratingValue': self.sudo().rating_avg,
                 'reviewCount': self.rating_count,
             }
+        if self.barcode:
+            markup_data['gtin'] = self.barcode
         return markup_data
 
     def _get_image_1920_url(self):

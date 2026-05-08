@@ -1,10 +1,11 @@
 import { Plugin } from "@html_editor/plugin";
-import { cleanTextNode } from "@html_editor/utils/dom";
+import { cleanEmptyAncestors, cleanTextNode } from "@html_editor/utils/dom";
 import { isTextNode, isZwnbsp } from "@html_editor/utils/dom_info";
 import { prepareUpdate } from "@html_editor/utils/dom_state";
 import { descendants, selectElements } from "@html_editor/utils/dom_traversal";
 import { leftPos, rightPos } from "@html_editor/utils/position";
 import { callbacksForCursorUpdate } from "@html_editor/utils/selection";
+import { withSequence } from "../utils/resource";
 
 /** @typedef {import("../core/selection_plugin").Cursors} Cursors */
 
@@ -34,7 +35,7 @@ export class FeffPlugin extends Plugin {
 
     /** @type {import("plugins").EditorResources} */
     resources = {
-        normalize_handlers: this.updateFeffs.bind(this),
+        normalize_handlers: withSequence(Infinity, this.updateFeffs.bind(this)),
         clean_for_save_handlers: this.cleanForSave.bind(this),
         intangible_char_for_keyboard_navigation_predicates: (ev, char, lastSkipped) =>
             // Skip first FEFF, but not the second one (unless shift is pressed).
@@ -67,7 +68,17 @@ export class FeffPlugin extends Plugin {
             // Remove all FEFF within a `prepareUpdate` to make sure to make <br>
             // nodes visible if needed.
             const restoreSpaces = prepareUpdate(...leftPos(node), ...rightPos(node));
+            const parent = node.parentNode;
             cleanTextNode(node, "\ufeff", cursors);
+            cleanEmptyAncestors(
+                parent,
+                cursors,
+                (node) =>
+                    node.hasAttribute("data-oe-zws-empty-inline") ||
+                    this.getResource("unremovable_node_predicates").some((predicate) =>
+                        predicate(node)
+                    )
+            );
             restoreSpaces();
         }
     }

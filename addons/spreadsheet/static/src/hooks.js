@@ -89,21 +89,25 @@ export function useSpreadsheetPrint(model) {
             offset: model().getters.getActiveSheetScrollInfo(),
             mode: model().config.mode,
         };
+        const startPrinting = () => {
+            // reset the viewport to A1 visibility
+            model().dispatch("SET_VIEWPORT_OFFSET", { offsetX: 0, offsetY: 0 });
+            model().dispatch("RESIZE_SHEETVIEW", { ...getPrintRect() });
+            printState.active = true;
+        };
+        if (model().getters.isDashboard()) {
+            startPrinting();
+            return;
+        }
         // FIXME: updateMode is not meant fore production use,
         // we should render a specific component with limited interface instead
         model().updateMode("dashboard");
-        // reset the viewport to A1 visibility
-        model().dispatch("SET_VIEWPORT_OFFSET", { offsetX: 0, offsetY: 0 });
-        model().dispatch("RESIZE_SHEETVIEW", {
-            ...getPrintRect(),
-        });
-
         // loaded here as the store provider might be empty (no Model store) when the hook is used
         const gridRendererStore = env.getStore(GridRenderer);
         const intervalId = setInterval(() => {
             if (!gridRendererStore.animations.size) {
                 clearInterval(intervalId);
-                printState.active = true;
+                startPrinting();
             }
         }, 50);
     }
@@ -131,14 +135,18 @@ export function useSpreadsheetNotificationStore() {
      *
      * @param {string} body body content to display
      * @param {Function} confirm Callback if the user press 'Confirm'
+     * @param {Function} cancel Callback if the user press 'Cancel'
      */
-    function askConfirmation(body, confirm) {
+    function askConfirmation(body, confirm, cancel) {
+        const confirmLabel = cancel ? _t("Yes") : _t("Confirm");
+        const cancelLabel = cancel && _t("No");
         dialog.add(ConfirmationDialog, {
             title: _t("Odoo Spreadsheet"),
             body,
             confirm,
-            cancel: () => {}, // Must be defined to display the Cancel button
-            confirmLabel: _t("Confirm"),
+            cancel: cancel || (() => {}), // Must be defined to display the Cancel button
+            confirmLabel,
+            cancelLabel,
         });
     }
 

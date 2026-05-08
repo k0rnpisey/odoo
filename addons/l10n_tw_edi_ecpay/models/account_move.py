@@ -7,7 +7,7 @@ import uuid
 from urllib.parse import urljoin
 
 from odoo import api, fields, models
-from odoo.addons.l10n_tw_edi_ecpay.utils import call_ecpay_api, transfer_time
+from odoo.addons.l10n_tw_edi_ecpay.utils import call_ecpay_api, transfer_time, convert_utc_time_to_tw_time
 from odoo.exceptions import UserError
 from odoo.tools import float_round
 
@@ -496,10 +496,11 @@ class AccountMove(models.Model):
             if not is_allowance:
                 line.l10n_tw_edi_ecpay_item_sequence = index
 
+            # ItemRemark is in TW Chinese Characters because the official document uses TW Chinese Characters
             if self.l10n_tw_edi_is_b2b and is_allowance:
                 item_list.append({
                     "OriginalInvoiceNumber": self.l10n_tw_edi_ecpay_invoice_id,
-                    "OriginalInvoiceDate": self.l10n_tw_edi_invoice_create_date.strftime("%Y-%m-%d"),
+                    "OriginalInvoiceDate": convert_utc_time_to_tw_time(self.l10n_tw_edi_invoice_create_date),
                     "OriginalSequenceNumber": line.l10n_tw_edi_ecpay_item_sequence,
                     "ItemName": line.name[:100],
                     "ItemCount": quantity,
@@ -515,6 +516,7 @@ class AccountMove(models.Model):
                     "ItemPrice": item_price,
                     "ItemTaxType": line.tax_ids[0].l10n_tw_edi_tax_type if tax_type != "4" and line.tax_ids else "",
                     "ItemAmount": item_amount,
+                    "ItemRemark": f"商品單位: {line.product_uom_id.name[:6]}" if line.product_uom_id else ""
                 })
             if self.l10n_tw_edi_is_b2b:
                 sale_amount += item_amount
@@ -648,7 +650,7 @@ class AccountMove(models.Model):
 
             json_data.update({
                 "InvoiceNo": self.l10n_tw_edi_ecpay_invoice_id,
-                "InvoiceDate": self.l10n_tw_edi_invoice_create_date.strftime("%Y-%m-%d %H:%M:%S"),
+                "InvoiceDate": convert_utc_time_to_tw_time(self.l10n_tw_edi_invoice_create_date),
             })
         else:
             json_data.update({
@@ -732,7 +734,7 @@ class AccountMove(models.Model):
             json_data.update({
                 "InvoiceCategory": 0,
                 "InvoiceNumber": self.l10n_tw_edi_ecpay_invoice_id,
-                "InvoiceDate": self.l10n_tw_edi_invoice_create_date.strftime("%Y-%m-%d %H:%M:%S"),
+                "InvoiceDate": convert_utc_time_to_tw_time(self.l10n_tw_edi_invoice_create_date),
             })
 
         response_data = call_ecpay_api("/GetIssue", json_data, self.company_id, self.l10n_tw_edi_is_b2b)
@@ -759,7 +761,7 @@ class AccountMove(models.Model):
 
         json_data = {
             "MerchantID": self.company_id.sudo().l10n_tw_edi_ecpay_merchant_id,
-            "InvoiceDate": self.l10n_tw_edi_invoice_create_date.strftime("%Y-%m-%d %H:%M:%S"),
+            "InvoiceDate": convert_utc_time_to_tw_time(self.l10n_tw_edi_invoice_create_date),
             "Reason": self.l10n_tw_edi_invalidate_reason
         }
 

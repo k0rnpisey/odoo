@@ -132,6 +132,9 @@ class AccountMove(models.Model):
             warnings = OrderedSet()
             if partner_msg := move.partner_id.purchase_warn_msg:
                 warnings.add((move.partner_id.name or move.partner_id.display_name) + ' - ' + partner_msg)
+            if partner_parent_msg := move.partner_id.parent_id.purchase_warn_msg:
+                parent = move.partner_id.parent_id
+                warnings.add((parent.name or parent.display_name) + ' - ' + partner_parent_msg)
             for product in move.invoice_line_ids.product_id:
                 if product_msg := product.purchase_line_warn_msg:
                     warnings.add(product.display_name + ' - ' + product_msg)
@@ -145,7 +148,8 @@ class AccountMove(models.Model):
             'res_model': 'purchase.bill.line.match',
             'domain': [
                 ('partner_id', 'in', (self.partner_id | self.partner_id.commercial_partner_id).ids),
-                ('company_id', 'in', self.env.company.ids),
+                ('company_id', 'in', self.env.companies.ids),
+                ('company_id', 'child_of', self.company_id.ids),
                 ('account_move_id', 'in', [self.id, False]),
             ],
             'views': [(self.env.ref('purchase.purchase_bill_line_match_tree').id, 'list')],

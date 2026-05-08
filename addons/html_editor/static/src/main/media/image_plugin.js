@@ -6,7 +6,7 @@ import { ImageToolbarDropdown } from "./image_toolbar_dropdown";
 import { createFileViewer } from "@web/core/file_viewer/file_viewer_hook";
 import { isHtmlContentSupported } from "@html_editor/core/selection_plugin";
 import { boundariesOut } from "@html_editor/utils/position";
-import { withSequence } from "@html_editor/utils/resource";
+import { READ, withSequence } from "@html_editor/utils/resource";
 import { ImageTransformButton } from "./image_transform_button";
 import { callbacksForCursorUpdate } from "@html_editor/utils/selection";
 import { closestBlock } from "@html_editor/utils/blocks";
@@ -211,7 +211,7 @@ export class ImagePlugin extends Plugin {
         ],
 
         /** Handlers */
-        selectionchange_handlers: this.updateImageParams.bind(this),
+        selectionchange_handlers: withSequence(READ, this.updateImageParams.bind(this)),
         post_undo_handlers: this.updateImageParams.bind(this),
         post_redo_handlers: this.updateImageParams.bind(this),
 
@@ -316,10 +316,10 @@ export class ImagePlugin extends Plugin {
             }
             const cursors = this.dependencies.selection.preserveSelection();
             cursors.update(callbacksForCursorUpdate.remove(targetedImg));
-            const parentEl = closestBlock(targetedImg);
+            const blockEl = closestBlock(targetedImg.parentElement);
             targetedImg.remove();
             cursors.restore();
-            fillEmpty(parentEl);
+            fillEmpty(blockEl);
             this.dependencies.history.addStep();
         }
     }
@@ -357,6 +357,10 @@ export class ImagePlugin extends Plugin {
                 description: _t("Embed the image in the document."),
                 icon: "fa-image",
                 run: () => {
+                    this.dispatchTo(
+                        "before_paste_handlers",
+                        this.dependencies.selection.getEditableSelection()
+                    );
                     const img = this.document.createElement("IMG");
                     img.setAttribute("src", url);
                     this.dependencies.dom.insert(img);
@@ -377,12 +381,17 @@ export class ImagePlugin extends Plugin {
     }
 
     resetImageTransformation(image) {
-        image.setAttribute(
-            "style",
-            (image.getAttribute("style") || "").replace(/[^;]*transform[\w:]*;?/g, "")
-        );
-        image.style.removeProperty("width");
-        image.style.removeProperty("height");
+        const stylePropertiesToRemove = [
+            "transform",
+            "transform-box",
+            "transform-origin",
+            "transform-style",
+            "width",
+            "height",
+        ];
+        for (const styleProperty of stylePropertiesToRemove) {
+            image.style.removeProperty(styleProperty);
+        }
         this.dependencies.history.addStep();
     }
 
